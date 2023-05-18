@@ -1,0 +1,37 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}calender{% endblock %}
+{% load bootstrap4 %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-mid-10 col-sm-12">
+        <h2 class="card-title text-center">【会員情報入力】</h2>
+        <form action="" method="POST">
+            <table class="card md-4 shadow-sm">
+                <tr><td>会員番号</td><td>1234</td></tr>
+                <tr><td>氏名</td><td>ピーク 太郎</td></tr>
+                <tr><td>性別</td><td>男性</td></tr>
+                <tr><td>生年月日</td><td>1977年3月10日</td></tr>
+                <tr><td>mail</td><td>aaaa@gmail.com</td></tr>
+                <tr><td>電話番号</td><td>090-1111-2222</td></tr>
+                <tr><td>回数</td><td><input type="number" name="user_no" >回</td></tr>
+                <tr><td>期間</td><td>開始日<input type="text" name="user_no" >　～　終了日<input type="number" name="user_no" ></td></tr>
+                <tr><td>靴預かり</td><td>あり<input type="radio" id="selectChoice1" name="select_shose" value="" />・なし<input type="radio" id="selectChoice2" name="select_shose" value="" /></td></tr>
+                <tr><td>口座引き落とし金額</td><td><input type="number" name="user_no" >円</td></tr>
+                <tr><td>メモ</td><td><input type="text" name="user_no" ></td></tr>
+            </table>
+
+            <div class="button mx-auto">
+                <button type="submit">更新する</button>
+            </div>
+           　{% csrf_token %}
+        </form>
+    </div>
+
+</div>
+
+
+
+{% endblock %}

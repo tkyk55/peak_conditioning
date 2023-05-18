@@ -1,0 +1,29 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}calender{% endblock %}
+{% load bootstrap4 %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-mid-10 col-sm-12">
+        <h2 class="card-title text-center">【会員リスト】</h2>
+        <form action="" method="POST">
+            <div class="card md-4 shadow-sm">
+                <table class="djdt-max-height-100">
+                    <th><tr>選択</tr><tr>番号</tr><tr>氏名</tr><tr>性別</tr><tr>携帯番号</tr></th></th>
+                    <tr><label><td><input type="radio" id="selectChoice1" name="select_user" value="" /></td><td>1234</td><td>ピーク太郎</td><td>男性</td><td>090-1111-2222</td></label></tr>
+                    <tr><label><td><input type="radio" id="selectChoice2" name="select_user" value="" /></td><td>2222</td><td>ピーク陽子</td><td>女性</td><td>080-1111-2222</td></label></tr>
+                    <tr><label><td><input type="radio" id="selectChoice3" name="select_user" value="" /></td><td>3333</td><td>ピーク次郎</td><td>男性</td><td>070-1111-2222</td></label></tr>
+                </table>
+            </div>
+            <div class="button mx-auto">
+                <button type="submit">編集する</button>
+            </div>
+           　{% csrf_token %}
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -25,9 +25,7 @@ class ProfileEditView(View):
                 'first_name': user_data.first_name,
                 'last_name': user_data.last_name,
                 'sex': user_data.sex,
-                'phone1': user_data.phone1,
-                'phone2': user_data.phone2,
-                'phone3': user_data.phone3,
+                'tel_number': user_data.tel_number,
                 'birthday': user_data.birthday,
                 'image': user_data.image
             }
@@ -45,7 +43,7 @@ class ProfileEditView(View):
             user_data.first_name = form.cleaned_data['first_name']
             user_data.last_name = form.cleaned_data['last_name']
             user_data.sex = form.cleaned_data['sex']
-            user_data.phone1 = form.cleaned_data['phone']
+            user_data.tel_number = form.cleaned_data['tel_number']
             user_data.birthday = form.cleaned_data['birthday']
             if request.FILES.get('image'):
                 user_data.image = request.FILES.get('image')

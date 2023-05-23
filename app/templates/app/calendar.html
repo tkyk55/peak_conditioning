@@ -70,23 +70,23 @@
                             {% elif book == 0 %}
                                <a href="{% url 'booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-circle"></i></a>
                             {% elif book == 1 %}
-                            　　<i class="bi bi-x-lg">予約済み</i>
+                               <i class="bi bi-x-lg"></i>
                             {% elif book == 2 %}
-                            　　<i class="bi bi-x-lg">満席</i>
-                            {% elif book == 3 %}
-                            　　<i class="bi bi-x-lg">予約不可</i>
-                            {% elif book == 4 %}
-                            　　<a href="{% url 'booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-caret-up">残りわずか</i></a>
+                               <i class="bi bi-x-lg"></i>
                             {% elif book == 5 %}
-                               <i class="bi bi-x-lg">期限外</i>
+                               <i class="bi bi-x-lg"></i>
                             {% elif book == 6 %}
-                               <i class="bi bi-x-lg">残回数不足</i>
+                               <i class="bi bi-x-lg"></i>
+                            {% elif book == 3 %}
+                               <i class="bi bi-x-lg"></i>
                             {% elif book == 7 %}
-                               <i class="bi bi-x-lg">当日１回</i>
+                               <i class="bi bi-x-lg"></i>
                             {% elif book == 99 %}
-                               <i class="bi bi-reception-0">時間切れ</i>
+                               <i class="bi bi-reception-0"></i>
+                            {% elif book == 4 %}
+                            　　<a href="{% url 'booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-caret-up"></i></a>
                             {% else %}
-                               <i class="bi bi-x-lg">想定外不可</i>
+                               <i class="bi bi-x-lg">e</i>
                             {% endif %}
                         </td>
                         {% endfor %}

@@ -90,11 +90,15 @@ h2 {
     box-shadow: none;
 }
 
-.navbar a {
-    color: #ffffff
-}
-
 .calendar img {
     height: 150px;
     object-fit: contain;
+}
+
+.navbar a.dropdown-item {
+    color: #070707 !important
+}
+
+.navbar a {
+    color: #ffffff
 }

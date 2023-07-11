@@ -31,6 +31,7 @@ class UserManager(UserManager):
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    member_no =  models.CharField(('会員番号'), max_length=5 ,null=True,blank=True)
     email = models.EmailField('メールアドレス', unique=True)
     first_name = models.CharField(('姓'), max_length=30)
     last_name = models.CharField(('名'), max_length=30)

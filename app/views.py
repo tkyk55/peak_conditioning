@@ -1,4 +1,4 @@
-import calendar
+import calendar , json
 
 from django.shortcuts import get_object_or_404, render ,redirect
 from django.views.generic import TemplateView
@@ -8,7 +8,7 @@ from accounts.models import Training ,CustomUser
 from datetime import datetime, date, timedelta, time
 from django.db.models import Q ,Count
 from django.utils.timezone import localtime, make_aware
-from app.forms import BookingForm, ExBookingForm, MemberForm ,NotificationForm
+from app.forms import BookingForm, ExBookingForm, MemberSearchForm, MemberForm ,NotificationForm
 
 
 class IndexView(TemplateView):
@@ -318,8 +318,11 @@ class StaffCalendarView(LoginRequiredMixin, TemplateView):
 
     # スタッフデータ
     staffs = user_data = CustomUser.objects.filter(is_staff=True)
+    #print(staffs)
+    staffall = Staff.objects.all()
+    #print(staffall)
     staff_cnt = CustomUser.objects.filter(is_staff=True).count()
-
+    #staff_cnt = Staff.objects.all().count()
 
     # タイムテーブル作成
     timetable = {}
@@ -355,7 +358,7 @@ class StaffCalendarView(LoginRequiredMixin, TemplateView):
         'month': month,
         'day': day,
         'today': today,
-        'staffs': staffs,
+        'staffs': staffall,
         'staff_cnt': staff_cnt,
         'timetable': timetable,
         'training': traning_detail,
@@ -537,7 +540,6 @@ class ExBookingView(TemplateView):
         Exbooking.tel_number = request.POST['tel_number']
         Exbooking.objective = request.POST['objective']
         Exbooking.remarks = request.POST['remarks']
-        #print(request.POST['first_name'])
         Exbooking.save()
         return render(request, 'app/ex_thanks.html', {
           'training_data': training_data,
@@ -562,34 +564,149 @@ class ExThanksView(TemplateView):
 
 class StaffMemberView(LoginRequiredMixin, TemplateView):
   def get(self, request, *args, **kwargs):
-    form = MemberForm(request.POST or None)
+    form = MemberSearchForm(request.POST or None)
 
     return render(request, 'app/member.html', {
       'form': form,
     })
 
   def post(self, request, *args, **kwargs):
+    #post_list = request.POST.getlist  # <input type="checkbox" name="delete"のnameに対応
+    post_list_json = json.dumps(request.POST)
+    request.session['post_list'] = post_list_json
     return redirect('member_list')
 
 class StaffMemberListView(LoginRequiredMixin, TemplateView):
   def get(self, request, *args, **kwargs):
+    serach_val = request.session.get('post_list')
+    serach_val_json = json.loads(serach_val)
+
+    user_detail = ''
+    if serach_val_json["member_no"]:
+      user_detail = CustomUser.objects.filter(member_no__contains=serach_val_json["member_no"])
+    if serach_val_json["first_name"]:
+      user_detail_b = CustomUser.objects.filter(first_name__contains=serach_val_json["first_name"])
+      if user_detail:
+        user_detail = user_detail.union(user_detail_b)
+      else:
+        user_detail = user_detail_b
+    if serach_val_json["last_name"]:
+      user_detail_b = CustomUser.objects.filter(last_name__contains=serach_val_json["last_name"])
+      if user_detail:
+         user_detail = user_detail.union(user_detail_b)
+      else:
+         user_detail = user_detail_b
+    if serach_val_json["tel_number"]:
+      user_detail_b = CustomUser.objects.filter(tel_number__contains=serach_val_json["tel_number"])
+      if user_detail:
+        user_detail = user_detail.union(user_detail_b)
+      else:
+        user_detail = user_detail_b
+
+    #for key,value in serach_val_json.items():
+    #    print(value)
 
     return render(request, 'app/member_list.html', {
+      'user_detail':user_detail,
     })
 
   def post(self, request, *args, **kwargs):
-    return redirect('member_input')
+    post_pks = request.POST.getlist('select_user') # <input type="checkbox" name="select_user"のvalueを取得
+    if post_pks :
+      request.session['user_pk'] = post_pks #セッションにセット
+      return redirect('member_input')
+    else:
+      serach_val = request.session.get('post_list')
+      serach_val_json = json.loads(serach_val)
+      user_detail = ''
+      if serach_val_json["member_no"]:
+        user_detail = CustomUser.objects.filter(member_no__contains=serach_val_json["member_no"])
+      if serach_val_json["first_name"]:
+        user_detail_b = CustomUser.objects.filter(first_name__contains=serach_val_json["first_name"])
+        if user_detail:
+          user_detail = user_detail.union(user_detail_b)
+        else:
+          user_detail = user_detail_b
+      if serach_val_json["last_name"]:
+        user_detail_b = CustomUser.objects.filter(last_name__contains=serach_val_json["last_name"])
+        if user_detail:
+          user_detail = user_detail.union(user_detail_b)
+        else:
+          user_detail = user_detail_b
+      if serach_val_json["tel_number"]:
+        user_detail_b = CustomUser.objects.filter(tel_number__contains=serach_val_json["tel_number"])
+        if user_detail:
+          user_detail = user_detail.union(user_detail_b)
+        else:
+          user_detail = user_detail_b
+
+      return render(request, 'app/member_list.html', {
+        'user_detail':user_detail,
+      })
+
 
 class StaffMemberInputView(LoginRequiredMixin, TemplateView):
   def get(self, request, *args, **kwargs):
-    form = MemberForm(request.POST or None)
+    user_pk = int(request.session.get('user_pk')[0]) #セッションからuserのid番号を引き継ぐ
+    user_data = CustomUser.objects.get(id=user_pk)
 
+    form = MemberForm(
+      request.POST or None,
+      initial={
+        'member_no': user_data.member_no,
+        'first_name':user_data.first_name,
+        'last_name':user_data.last_name,
+        'sex': user_data.sex,
+        'birthday':user_data.birthday,
+        'email':user_data.email,
+        'tel_number':user_data.tel_number,
+        'num_contracts':user_data.num_contracts,
+        'stat_date':user_data.stat_date,
+        'end_date':user_data.end_date,
+        'is_shoes_custody':user_data.is_shoes_custody,
+        'amount_money':user_data.amount_money,
+        'memo':user_data.memo
+      }
+    )
     return render(request, 'app/member_input.html', {
       'form': form,
+      'user_data': user_data
     })
 
   def post(self, request, *args, **kwargs):
-    return redirect('member_input_ok')
+    user_pk = request.POST.getlist('member_input') # <input type="checkbox" name="select_user"のvalueを取得
+    form = MemberForm(request.POST or None)
+    user_data = CustomUser.objects.get(id=user_pk[0])
+
+    if form.is_valid():
+      user_data.member_no = form.cleaned_data['member_no']
+      user_data.first_name = form.cleaned_data['first_name']
+      user_data.last_name = form.cleaned_data['last_name']
+      user_data.sex = form.cleaned_data['sex']
+      user_data.birthday = form.cleaned_data['birthday']
+      user_data.email = form.cleaned_data['email']
+      user_data.tel_number = form.cleaned_data['tel_number']
+      user_data.num_contracts = form.cleaned_data['num_contracts']
+      user_data.stat_date = form.cleaned_data['stat_date']
+      user_data.end_date = form.cleaned_data['end_date']
+      user_data.is_shoes_custody = form.cleaned_data['is_shoes_custody']
+      user_data.is_active = form.cleaned_data['is_active']
+      user_data.amount_money = form.cleaned_data['amount_money']
+      user_data.memo = form.cleaned_data['memo']
+      user_data.save()
+      return redirect('member_input_ok')
+    else:
+      # フォームが無効な場合の処理
+      # for field, errors in form.errors.items():
+      #   # 各項目のエラーメッセージを取得
+      #   for error in errors:
+      #     print(f"{field}: {error}")
+
+      return render(request, 'app/member_input.html', {
+        'form': form,
+        'user_data': user_data,
+      })
+
 
 class StaffMemberInputOkView(LoginRequiredMixin, TemplateView):
   def get(self, request, *args, **kwargs):

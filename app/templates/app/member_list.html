@@ -11,10 +11,20 @@
         <form action="" method="POST">
             <div class="card md-4 shadow-sm">
                 <table class="djdt-max-height-100">
-                    <th><tr>選択</tr><tr>番号</tr><tr>氏名</tr><tr>性別</tr><tr>携帯番号</tr></th></th>
-                    <tr><label><td><input type="radio" id="selectChoice1" name="select_user" value="" /></td><td>1234</td><td>ピーク太郎</td><td>男性</td><td>090-1111-2222</td></label></tr>
-                    <tr><label><td><input type="radio" id="selectChoice2" name="select_user" value="" /></td><td>2222</td><td>ピーク陽子</td><td>女性</td><td>080-1111-2222</td></label></tr>
-                    <tr><label><td><input type="radio" id="selectChoice3" name="select_user" value="" /></td><td>3333</td><td>ピーク次郎</td><td>男性</td><td>070-1111-2222</td></label></tr>
+                    <tr><th class="header">選択</th>
+                        <th class="header">番号</th>
+                        <th class="header">氏名</th>
+                        <th class="header">性別</th>
+                        <th class="header">携帯番号</th>
+                    </tr>
+                    {% for user in user_detail %}
+                    <tr><label><td class="data"><input type="radio" id="selectChoice1" name="select_user" value="{{ user.pk }}" /></td>
+                               <td class="data">{{ user.member_no }}</td>
+                               <td class="data">{{ user.first_name }}&emsp;{{ user.last_name }}</td>
+                               <td class="data">{% if user.sex == 0 %}男性{% endif %}{% if user.sex == 1 %}女性{% endif %}{% if user.sex == 3 %}選択なし{% endif %}</td>
+                               <td class="data">{{ user.tel_number }}</td></label>
+                    </tr>
+                    {% endfor %}
                 </table>
             </div>
             <div class="button mx-auto">

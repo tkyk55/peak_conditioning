@@ -107,3 +107,12 @@ h2 {
 .navbar a.dropdown-item {
     color: #070707 !important
 }
+
+.form-control {
+    display: inline;
+    width: 40%;
+}
+
+.peak__row{
+    width: 100%;
+}

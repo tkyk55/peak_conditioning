@@ -70,7 +70,7 @@
                             {% elif book == 0 %}
                                <a href="{% url 'booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-circle"></i></a>
                             {% elif book == 1 %}
-                               <i class="bi bi-x-lg"></i>
+                               <i class="bi bi-x-lg">予約済み</i>
                             {% elif book == 2 %}
                                <i class="bi bi-x-lg"></i>
                             {% elif book == 5 %}
@@ -84,7 +84,7 @@
                             {% elif book == 99 %}
                                <i class="bi bi-reception-0"></i>
                             {% elif book == 4 %}
-                            　　<a href="{% url 'booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-caret-up"></i></a>
+                               <a href="{% url 'booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-caret-up"></i></a>
                             {% else %}
                                <i class="bi bi-x-lg">e</i>
                             {% endif %}

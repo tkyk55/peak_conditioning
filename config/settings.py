@@ -161,7 +161,7 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 # デプロイ設定
-DEBUG = False
+DEBUG = True
 
 try:
     from .local_settings import *

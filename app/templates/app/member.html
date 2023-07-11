@@ -1,18 +1,18 @@
 {% extends "base_staff.html" %}
 {% load i18n %}
+{% load widget_tweaks %}
 {% block title %}calender{% endblock %}
 {% load bootstrap4 %}
-
 {% block content %}
 
 <div class="row justify-content-center">
     <div class="col-lg-8 col-mid-10 col-sm-12">
         <h2 class="card-title text-center">【会員検索】</h2>
-        <form action="" method="POST">
+        <form method="POST">
             <table class="card md-4 shadow-sm">
-                <tr><td>会員番号</td><td><input type="number" name="user_no" ></td></tr>
-                <tr><td>氏名</td><td> <input type="text" name="first_name" maxlength="30" ><input type="text" name="last_name" maxlength="30" ></td></tr>
-                <tr><td>電話番号</td><td> <input type="text" name="tel_no" maxlength="15"></td></tr>
+                <tr><th>会員番号</th><td>{% render_field form.member_no class="form-control" %}</td></tr>
+                <tr><th>氏名</th><td><nobr>{% render_field form.first_name class="form-control" %}{% render_field form.last_name class="form-control" %}</nobr></td></tr>
+                <tr><th>携帯番号</th><td>{% render_field form.tel_number class="form-control" %}</td></tr>
             </table>
 
             <div class="button mx-auto">

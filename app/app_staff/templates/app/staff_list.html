@@ -1,0 +1,39 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% load bootstrap4 %}
+{% block title %}menu{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-mid-10 col-sm-12">
+        <div class="card md-4 shadow-sm">
+            <div class="container">
+                <div class="row">
+                    <div class="mb-5">
+                        <h1>スタッフ一覧</h1>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        {% for staff in staffs %}
+                        <div class="card img-thumbnail storelist mb-3">
+                            <img
+                                    class="card-img-top card-thum"
+                                    src="{% if staff.user.image %}{{ staff.user.image.url }}{% endif %}"
+                                    alt=""
+                            />
+                            <div class="card-body text-center px-2 py-3">
+                                <h5 class="font-weight-bold">{{ staff.first_name }}</h5>
+                                <h5 class="font-weight-bold">{{ staff.last_name }}</h5>
+                            </div>
+                            <a class="stretched-link" href=""></a>
+                        </div>
+                        {% empty %}
+                        <p>まだスタッフがいません</p>
+                        {% endfor %}
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

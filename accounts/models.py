@@ -35,23 +35,23 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField('メールアドレス', unique=True)
     first_name = models.CharField(('姓'), max_length=30)
     last_name = models.CharField(('名'), max_length=30)
-    sex = models.IntegerField('性別', default=0)
-    birthday = models.DateField(('生年月日'), default=timezone.now)
+    sex = models.IntegerField('性別', default=2)
+    birthday = models.DateField(('生年月日'), null=True, blank=True)
     tel_number_regex = RegexValidator(regex=r'[(]?\d{2,4}[-)]?\d{2,4}-\d{3,4}', message = ("右の形式で入力してください「090-1234-5678」"))
     tel_number = models.CharField(validators=[tel_number_regex], max_length=15, verbose_name='携帯電話番号', default="")
     num_contracts = models.IntegerField('契約回数', default=8)
     num_times = models.IntegerField('予約残回数', default=8)
-    stat_date = models.DateField(('契約開始日'), default=timezone.now)
-    end_date = models.DateField(('契約終了日'), default=timezone.now)
+    stat_date = models.DateField(('契約開始日'), null=True, blank=True)
+    end_date = models.DateField(('契約終了日'), null=True, blank=True)
     is_shoes_custody = models.BooleanField(
         ('靴預り'),
         default=False,
         help_text=('靴預りありの場合はチェックを入れてください'),
     )
     amount_money = models.IntegerField('口座引落金額', default=0)
-    memo = models.TextField('メモ', default="", blank=True)
+    memo = models.TextField('メモ', null=True, blank=True)
 
-    created = models.DateField(('入会日'), default=timezone.now)
+    created = models.DateField(('入会日'), null=True, blank=True)
     image = models.ImageField(upload_to='images', verbose_name='プロフィール画像', null=True, blank=True)
     is_staff = models.BooleanField(
         ('staff status'),
@@ -87,6 +87,7 @@ class Training(models.Model):
     display_num = models.IntegerField('表示順', default=0)
     image = models.ImageField(upload_to='images', verbose_name='イメージ画像', null=True, blank=True)
     duplicates_num = models.IntegerField('重複数', default=1)
+    del_flg = models.IntegerField('削除フラグ', default=0)
 
     def __str__(self):
         return self.name

@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'crispy_forms',
     'widget_tweaks',
     'app',
+    'app.app_member',
+    'app.app_staff',
     'accounts',
 
 ]
@@ -64,6 +66,8 @@ TEMPLATES = [
         'DIRS': [
             os.path.join(BASE_DIR, 'templates', 'allauth'), #ログインテンプレート等などを置く場所
             os.path.join(BASE_DIR, 'templates'), #テンプレートを置く場所
+            os.path.join(BASE_DIR, 'app/app_member/templates'), #テンプレートを置く場所
+            os.path.join(BASE_DIR, 'app/app_staff/templates'), #テンプレートを置く場所
         ],
         'APP_DIRS': True,
         'OPTIONS': {

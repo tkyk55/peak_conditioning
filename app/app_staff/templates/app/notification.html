@@ -1,0 +1,34 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}notification{% endblock %}
+{% load bootstrap4 %}
+{% load widget_tweaks %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-mid-5 col-sm-5">
+        <h2 class="card-title text-center">【おしらせ入力】</h2>
+        <form action="" method="POST">
+            <div class="md-8 shadow-sm">
+            <table class="table table-bordered bg-light">
+                <thead class="thead-light">
+                <tr><th>おしらせ内容</th></tr>
+                <tr><td>{% render_field form.notice class="form-control_notification" placeholder="おしらせ内容を記載してください" %}</td></tr>
+                </thead>
+            </table>
+            </div>
+
+            <div class="button mx-auto">
+                <input class="btn btn-primary" type="submit" name="submit" id="notification" value="更新する" onClick="return updateynCheck()">
+            </div>
+            <div class="button mx-auto mt-3">
+                <a class="btn btn-outline-secondary" href="{% url 'menu' %}">戻る</a>
+            </div>
+           　{% csrf_token %}
+        </form>
+    </div>
+
+</div>
+
+
+{% endblock %}

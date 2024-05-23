@@ -1,0 +1,37 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}staff_work_cnt{% endblock %}
+{% load bootstrap4 %}
+{% load widget_tweaks %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <h2 class="card-title text-center">【スタッフ勤務時間】</h2>
+    <div class="col-lg-5 col-mid-11 col-sm-12">
+        <div class="d-flex mb-2">
+            <div class="mr-auto">
+                <a class="btn btn-warning" href="{% url 'staff_work_cnt' before_month.year before_month.month before_month.day %}">前月</a>
+            </div>
+            <div class="mr-auto"><h4>{{ today.year }}年{{ today.month }}月</h4></div>
+            <div>
+                <a class="btn btn-warning" href="{% url 'staff_work_cnt' next_month.year next_month.month next_month.day %}">次月</a>
+            </div>
+        </div>
+        <table class="table table-bordered bg-light">
+            <thead class="thead-light">
+            <tr><th class="text-black-30 border-left border border-dark">スタッフ名</th><th class="text-black-30 border-left border border-dark">勤務時間</th></tr>
+            {{ monthly_work_hours.items }}
+            {% for work_hour in monthly_work_hours %}
+                <tr><td class="text-body border border-dark">{{ work_hour.staff_id__first_name }}{{ work_hour.staff_id__last_name }}</td><td class="text-body border border-dark">{{ work_hour.total_work_hours }}</td></tr>
+            {% empty %}
+            <p>勤務データがありません</p>
+            {% endfor %}
+            </thead>
+        </table>
+        <div class="button mx-auto mt-3 mb-3">
+            <a class="btn btn-outline-secondary" href="{% url 'menu' %}">戻る</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

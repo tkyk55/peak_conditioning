@@ -1,11 +1,6 @@
 body {
-    background-color: rgb(196 243 164);
+    background-color: rgb(164, 222, 243);
 }
-
-.bg-navbar{
-    background-color: #13a800;
-}
-
 .allauth_container{
     width:80%;
     max-width:300px;
@@ -46,7 +41,7 @@ h2 {
 }
 
 .button {
-    width: fit-content;
+    width: 150px;
 }
 
 .btn {
@@ -95,10 +90,6 @@ h2 {
     box-shadow: none;
 }
 
-.navbar a {
-    color: #ffffff
-}
-
 .calendar img {
     height: 150px;
     object-fit: contain;
@@ -108,63 +99,14 @@ h2 {
     color: #070707 !important
 }
 
-.form-control {
-    display: inline;
-    width: 40%;
-}
-
-.form-control_staff_work, .form-control_notification, .form-control_staff {
-    display: inline;
-    width: 100%;
-}
-
-.form-control_peak {
-    display: inline;
-    width: 50%;
-}
-
-.peak__row{
-    width: 100%;
-}
-
-.staff_training{
-    background-color: #e9ecef !important;
-}
-
-.table td {
-    color: #e9ecef
-}
-
-.table td.training_link a{
+.navbar a {
     color: #ffffff
 }
 
-.table td.bg-color_10{
-    background-color: #0f5ade
+.input_check_box {
+    margin: 40px auto;
 }
 
-.card-title {
-    margin-bottom: 1.0rem;
-    margin-top: 1.0rem;
-}
-
-.bi-toggle-on, .bi-toggle-off {
-    font-size: 1.5rem;
-}
-
-.peak__block {
-    color: #1b1b1b;
-}
-
-.hour-divider {
-    border-bottom: 2px solid black;
-}
-
-.table th a {
-    color:#495057;
-}
-
-.peak__title {
-    font-size: 1.3em;
-    margin: 1em;
+.table thead th {
+    vertical-align: middle;
 }

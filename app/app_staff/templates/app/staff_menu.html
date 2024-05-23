@@ -1,0 +1,41 @@
+{% extends "base_staff.html" %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% block title %}staff_menu{% endblock %}
+{% load bootstrap4 %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <h2 class="card-title text-center">スタッフ一覧</h2>
+    <div class="col-lg-8 col-mid-10 col-sm-12">
+        <form action="" method="POST">
+            <table class="table table-bordered bg-light">
+                <thead class="thead-light">
+                <tr><th class="header">選択</th>
+                    <th class="header">氏名</th>
+                    <th class="header">メモ</th>
+                    <th class="header">アクティブ</th>
+                </tr>
+                </thead>
+                {% for staff in staffs %}
+                <tr><td class="data text-secondary"><input type="radio" id="selectChoice{{ forloop.counter }}" name="select_staff" value="{{ staff.pk }}"></td>
+                    <td class="data text-secondary"><label for="selectChoice{{ forloop.counter }}">{{ staff.first_name }}&emsp;{{ staff.last_name }}</label></td>
+                    <td class="data text-secondary"><label for="selectChoice{{ forloop.counter }}">{{ staff.memo }}</label></td>
+                    <td class="data text-secondary"><label for="selectChoice{{ forloop.counter }}">{{ staff.is_active }}</label></td>
+                </tr>
+                {% empty %}
+                <p>まだスタッフがいません</p>
+                {% endfor %}
+            </table>
+            <div class="button mx-auto">
+                <input class="btn btn-primary" type="submit" name="submit" value="編集する" onClick="return editCheck()">
+                <input class="btn btn-primary" type="submit" name="submit" value="新規入力">
+            </div>
+            <div class="button mx-auto mt-3">
+                <a class="btn btn-outline-secondary" href="{% url 'menu' %}">戻る</a>
+            </div>
+            {% csrf_token %}
+        </form>
+    </div>
+</div>
+{% endblock %}

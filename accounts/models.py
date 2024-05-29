@@ -31,8 +31,9 @@ class UserManager(UserManager):
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    member_no =  models.CharField(('会員番号'), max_length=5 ,null=True,blank=True)
+    member_no = models.CharField(('会員番号'), max_length=5, null=True, blank=True)
     email = models.EmailField('メールアドレス', unique=True)
+    email_verified = models.BooleanField(default=False)
     first_name = models.CharField(('姓'), max_length=30)
     last_name = models.CharField(('名'), max_length=30)
     sex = models.IntegerField('性別', default=2)

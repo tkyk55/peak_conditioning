@@ -32,6 +32,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path('accounts/logout/', auth_views.LoginView.as_view(), name='logout'),
+    path('accounts/nippo/', views.NippoView.as_view(), name='nippo-list'),
     path('menu/', views.MenuView.as_view(), name='menu'),
     path('reserve/', views.ReserveView.as_view(), name='reserve'),
     path('profile/', views.ProfileView.as_view(), name='profile'),

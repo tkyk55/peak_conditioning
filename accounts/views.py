@@ -79,3 +79,9 @@ class ReserveView(LoginRequiredMixin, TemplateView):
         return render(request, 'accounts/reserve.html', {
             'training_data': Training_data,
         })
+
+class NippoView(TemplateView):
+    def get(self, request, *args, **kwargs):
+
+        return render(request, 'accounts/nippo-list.html', {
+        })

@@ -1,4 +1,4 @@
-{% extends "app/base.html" %} {% block content %}
+{% extends "base.html" %} {% block content %}
 {% load bootstrap4 %}
 
 <div class="row justify-content-center card card-profile my-5 mx-auto">
@@ -25,8 +25,18 @@
                 </tbody>
             </table>
 
-            <div class="button mx-auto">
-                <button type="submit">予約を取り消す</button>
+            <div class="text-center mx-auto">
+                {% if booking_data %}
+                    <tabele class="profile_table mb-4">
+                        <tbody>
+                        <tr><td><a class="btn btn-primary" href="{% url 'mypage' %}">マイページに戻る</a></td>
+                            <td><input class="btn btn-warning" type="submit" name="submit" id="notification" value="予約を取り消す" onClick="return cancelCheck()"></td>
+                        </tr>
+                        </tbody>
+                    </tabele>
+                {% else %}
+                    <p><a class="btn btn-primary" href="{% url 'mypage' %}">マイページに戻る</a></p>
+                {% endif %}
             </div>
             {% csrf_token %}
         </form>

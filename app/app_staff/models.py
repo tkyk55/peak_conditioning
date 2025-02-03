@@ -14,12 +14,16 @@ class Staff(models.Model):
         ),
     )
     memo = models.TextField('メモ', null=True, blank=True)
+    created_at = models.DateTimeField('作成時間', default=timezone.now)
+    updated_at = models.DateTimeField('更新時間', auto_now=True)
 
-    def __str__(self):
+def __str__(self):
         return f'{self.first_name} {self.last_name}'
 
 class Notification(models.Model):
     notice = models.TextField('おしらせ', null=True, blank=True)
+    created_at = models.DateTimeField('作成時間', default=timezone.now)
+    updated_at = models.DateTimeField('更新時間', auto_now=True)
 
     def __str__(self):
         return f'{self.notice}'
@@ -29,6 +33,8 @@ class StaffWork(models.Model):
     start = models.DateTimeField('開始時間', default=timezone.now)
     end = models.DateTimeField('終了時間', default=timezone.now)
     remarks = models.TextField('備考', default="", blank=True)
+    created_at = models.DateTimeField('作成時間', default=timezone.now)
+    updated_at = models.DateTimeField('更新時間', auto_now=True)
 
     def __str__(self):
         start = timezone.localtime(self.start).strftime('%Y/%m/%d %H:%M')
@@ -41,6 +47,8 @@ class ClosingDay(models.Model):
     end = models.DateTimeField('終了時間', default=timezone.now)
     training = models.ForeignKey(Training, verbose_name='トレーニング', on_delete=models.CASCADE, null=True)
     training_no = models.IntegerField(default=None, null=True)
+    created_at = models.DateTimeField('作成時間', default=timezone.now)
+    updated_at = models.DateTimeField('更新時間', auto_now=True)
 
     def __str__(self):
         start = timezone.localtime(self.start).strftime('%Y/%m/%d %H:%M')

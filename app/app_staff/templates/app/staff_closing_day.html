@@ -22,7 +22,7 @@
                 <a class="btn btn-warning" href="{% url 'staff_calendar' next_month.year next_month.month next_month.day %}">次月</a>
             </div>
         </div>
-        <table class="table table-bordered bg-light">
+        <table class="table table-bordered bg-light peak__staff_table">
             <thead class="thead-light">
             <tr>
                 {% for day, day_details in days.items %}
@@ -64,7 +64,7 @@
     </div>
 
     <div class="col-lg-11 col-mid-11 col-sm-12">
-        <table class="table table-bordered bg-light">
+        <table class="table table-bordered bg-light peak__staff_table">
             <thead class="thead-light">
             <tr>
                 <th colspan="2" class="text-primary border-left border border-dark">時間→</th>
@@ -75,9 +75,9 @@
             <tr>
                 <th colspan="2" class="border-dark">↓トレーニング</th>
                 {% for hour, schedules in timetable.items %}
-                {% for minute, schedules_minute in schedules.items %}
-                <th class="{% if forloop.last %}border-dark{% endif %}">{{ minute }}</th>
-                {% endfor %}
+                    {% for minute, schedules_minute in schedules.minutes.items %}
+                        <th class="{% if forloop.last %}border-dark{% endif %}">{{ minute }}</th>
+                    {% endfor %}
                 {% endfor %}
             </tr>
             </thead>
@@ -98,7 +98,7 @@
                         {% for training_minute, schedules_minute in schedules.items %}
 
                             {% if schedules_minute.blackgray == "B" %}
-                                <td class="" ><a href="{% url 'staff_closing_day' 'B' schedules_minute.closing_id today.year today.month today.day %}" ><i class="peak__block bi bi-x-square-fill"></i></a>></td>
+                                <td class="" ><a href="{% url 'staff_closing_day' 'B' schedules_minute.closing_id today.year today.month today.day %}" ><i class="peak__block bi bi-x-square-fill"></i></a></td>
                             {% elif schedules_minute.blackgray == "G" %}
                                 <td class="text-secondary" ><a href="{% url 'staff_closing_day' 'G' schedules_minute.closing_id today.year today.month today.day %}" ><i class="bi bi-x-square"></i></a></td>
                             {% else %}

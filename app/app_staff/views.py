@@ -4,17 +4,21 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from app.app_staff.models import Staff, Notification, StaffWork, ClosingDay
-from app.app_member.models import Booking
+from app.app_member.models import Booking, ExBooking, Master
 from accounts.models import Training, CustomUser
 from datetime import datetime, date, timedelta, time
 from django.db.models import Q, Count, Sum, F, ExpressionWrapper, fields
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils.timezone import localtime, make_aware
+from django.utils import timezone
 from app.app_staff.forms import MemberSearchForm, MemberForm, NotificationForm, StaffInputForm, StaffWorkInputForm, \
-    StaffBookingInputForm, StaffClosingInputForm
+    StaffBookingInputForm, StaffClosingInputForm, StaffExBookingForm
 from dateutil.relativedelta import relativedelta
 from django.db import connection
-
+from config.utils import send_custom_email, send_email__function, find_closing_exist_days__function, day_start_end_setting__function
+from icecream import ic
+import ast
+from zoneinfo import ZoneInfo
 
 class IndexView(TemplateView):
     template_name = 'app/index.html'
@@ -41,7 +45,7 @@ class StaffCalendarView(LoginRequiredMixin, TemplateView):
             today = date.today()
 
         # 日付変換関数呼び出し
-        day_start_end = day_start_end_setting__function(year, month, day)
+        day_start_end = day_start_end_setting__function(today.year, today.month, today.day)
         start_date = day_start_end['start_date']  # 2024/1/1
         last_day = day_start_end['last_day']  # 31日
 
@@ -52,6 +56,13 @@ class StaffCalendarView(LoginRequiredMixin, TemplateView):
         staffs = Staff.objects.filter(is_active=True)
         staff_cnt = Staff.objects.filter(is_active=True).count()
 
+        # nowの時間を設定
+        now = datetime.now()
+        today_time = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=now.hour, minute=now.minute))
+
+        # 現在の15分単位を取得
+        nearest_minute = get_nearest_minute(now.minute)
+
         # スタッフデータの側を作成
         calendar_data = {}
         for staff in staffs:
@@ -61,7 +72,20 @@ class StaffCalendarView(LoginRequiredMixin, TemplateView):
             for hour in range(9, 20):
                 row = {}
                 for minute in [0, 15, 30, 45]:
-                    row[minute] = 0
+                    # 基本データを設定
+                    row[minute] = {
+                        'at_work_flg':0,
+                        'minute_now_flg': 0  # デフォルトは0'
+                    }
+
+                    # 今日で現在時刻に近い場合に minute_now_flg を1にする
+                    if today == now.date() and hour == now.hour and minute == nearest_minute:
+                        row[minute]['minute_now_flg'] = 1
+
+                # ダミーフラグ：11時30分の場合
+                    # if hour == 11 and minute == 30:
+                    #     row[minute]['minute_now_flg'] = 1  # ダミーフラグ
+
                 timetable[hour] = row
             calendar_data[staff] = timetable
 
@@ -74,34 +98,33 @@ class StaffCalendarView(LoginRequiredMixin, TemplateView):
             for hour_calendar in calendar_data[staff_calendar]:
                 for minute_calendar in calendar_data[staff_calendar][hour_calendar]:
 
-                    datetime_calendar = hour_minute_second__function(today, str(hour_calendar), str(minute_calendar), "00")
+                    datetime_calendar = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=hour_calendar, minute=minute_calendar))
 
                     ## 15分後を算出
-                    re_val = later_15minute__function(minute_calendar, hour_calendar)
-
-                    datetime_calendar_end = make_aware(
-                        datetime(year=datetime_start.year, month=datetime_start.month, day=datetime_start.day,
-                                 hour=re_val['hour_end'], minute=re_val['minute_end']))
+                    datetime_calendar_end = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=hour_calendar, minute=minute_calendar)) + timedelta(minutes=15)
 
                     for staff_work in staff_work_data:
                         if staff_work.staff_id_id == staff_calendar.id and datetime_calendar < staff_work.end and datetime_calendar_end > staff_work.start:
-                            calendar_data[staff_calendar][hour_calendar][minute_calendar] = 1  # 勤務中
+                            calendar_data[staff_calendar][hour_calendar][minute_calendar]['at_work_flg'] = 1  # 勤務中
 
         # トレーニングデータ取得
         training_data = Training.objects.filter(del_flg=0).order_by('display_num')
 
-        start_date_j = day_start_end['start_date_j']
+        #start_date_j = day_start_end['start_date_j']
+        start_date_j = day_start_end['today_j']
         end_date_j = day_start_end['end_date_j']
 
         # bookings クエリセットを取得する
-        bookings = Booking.objects.filter(start__gte=start_date_j, end__lte=end_date_j, del_flg=0).order_by(
-            'training_no')
+        bookings = Booking.objects.filter(start__gte=start_date_j, end__lte=end_date_j, del_flg=0).order_by('training_no')
+
+        # bookings クエリセットを取得する
+        exbookings = ExBooking.objects.filter(start__gte=start_date_j, end__lte=end_date_j, is_valid=1)
 
         # bookingデータ編集
-        booking_results = booking_results__function(bookings, 0)
+        booking_results = booking_results__function(bookings, exbookings, 0)
 
         # トレーニング側作成
-        training_detail = training_detail__function(training_data)
+        training_detail = training_detail__function(training_data, today_time)
 
         # 休館日・ブロック取得
         bg_data = ClosingDay.objects.filter(start__gte=start_date_j, start__lte=end_date_j)
@@ -122,7 +145,7 @@ class StaffCalendarView(LoginRequiredMixin, TemplateView):
             'staffs': staffs,
             'staff_cnt': staff_cnt,
             'staff_calendar': calendar_data,
-            'timetable': timetable__function(),
+            'timetable': timetable__function(today_time),
             'training_data': training_data,
             'training': training_detail,
         })
@@ -179,7 +202,7 @@ class StaffMemberInputView(LoginRequiredMixin, TemplateView):
         pass_val = request.session.get('pass_prm')
 
         if (pass_val):
-            return redirect('staff_booking_input', pass_val['training_id'], 0, user_pk, 0, pass_val['year'],
+            return redirect('staff_booking_input', pass_val['training_id'],pass_val['training_no'], 0, user_pk, 0, pass_val['year'],
                             pass_val['month'], pass_val['day'], pass_val['hour'], pass_val['minute'])
         else:
             form = MemberForm(
@@ -361,7 +384,7 @@ class StaffWorkInputView(LoginRequiredMixin, TemplateView):
         day = self.kwargs.get('day')
 
         # スタッフデータの側を作成
-        staff_calendar = timetable__function()
+        staff_calendar = create_empty_timetable()
 
         # 今日の設定
         if year:
@@ -372,56 +395,62 @@ class StaffWorkInputView(LoginRequiredMixin, TemplateView):
         # クリックした日時がすでに登録されているかを探す
         day_start_end = day_start_end_setting__function(year, month, day)
         datetime_start_click = day_start_end['today_j']
-        date_start = datetime_start_click.strftime('%Y-%m-%d')
         datetime_end = datetime_start_click + timedelta(hours=23)
 
         ## staff_workデータベースアクセス
-        staff_time_data = StaffWork.objects.filter(staff_id=self.kwargs['id'], start__gte=datetime_start_click, end__lte=datetime_end)
+        staff_time_data = StaffWork.objects.filter(staff_id=self.kwargs['id'], start__gte=datetime_start_click, end__lte=datetime_end,).order_by('-id')
 
         staff_time_data_id = None
 
         # すでに登録されていたら、登録時間をセット。そうでなければクリック時間を開始時間にセットし、開始時間の１時間後を終了時間にセットする
         if staff_time_data:
-            datetime_staff_start = staff_time_data.values('start')[0]['start']
-            datetime_staff_end = staff_time_data.values('end')[0]['end']
+            datetime_staff_start = staff_time_data.values('start')[0]['start'].astimezone(ZoneInfo("Asia/Tokyo"))
+            datetime_staff_end = staff_time_data.values('end')[0]['end'].astimezone(ZoneInfo("Asia/Tokyo"))
 
-            for hour_calendar in staff_calendar:
-                for minute_calendar in staff_calendar[hour_calendar]:
-                    datetime_calendar = hour_minute_second__function(today, str(hour_calendar), str(minute_calendar), "00")
+            for hour_calendar, hour_data in staff_calendar.items():  # 時間単位でループ
+                for minute_calendar, minute_flag in hour_data['minutes'].items():  # 分単位でループ
+
+                    datetime_calendar = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=hour_calendar, minute=minute_calendar))
 
                     ## 15分後を算出
-                    re_val = later_15minute__function(minute_calendar, hour_calendar)
-                    datetime_calendar_end = hour_minute_second__function(today, str(re_val['hour_end']), str(re_val['minute_end']), "00")
+                    datetime_calendar_end = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=hour_calendar, minute=minute_calendar)) + timedelta(minutes=15)
 
                     if datetime_calendar < datetime_staff_end and datetime_calendar_end > datetime_staff_start:
-                        staff_calendar[hour_calendar][minute_calendar] = 1  # 勤務中 html >> staff_work == 1
+                        staff_calendar[hour_calendar]['minutes'][minute_calendar] = 1  # 勤務中 html >> staff_work == 1
                         staff_time_data_id = staff_time_data.values('id')[0]['id']
 
         else:
-            datetime_staff_start = hour_minute_second__function(today, str(self.kwargs['hour']), str(self.kwargs['minute']), "00")
+            #datetime_staff_start = hour_minute_second__function(today, str(self.kwargs['hour']), str(self.kwargs['minute']), "00")
+            datetime_staff_start = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=self.kwargs['hour'], minute=self.kwargs['minute']))
             datetime_staff_end = datetime_staff_start + timedelta(hours=1)
 
         staff_name_data = Staff.objects.filter(id=self.kwargs['id'])
 
+        # 初期値から時間と分だけを取り出す
+        start_time = datetime_staff_start.strftime("%H:%M")  # 例: "09:15"
+        end_time = datetime_staff_end.strftime("%H:%M")      # 例: "10:15"
+
         form = StaffWorkInputForm(
             request.POST or None,
             initial={
-                'start': datetime_staff_start,
-                'end': datetime_staff_end,
+                'start': start_time,
+                'end': end_time,
             }
         )
 
         return render(request, 'app/staff_work_input.html', {
             'staff': staff_name_data,
             'form': form,
-            'target_date': date_start,
-            'timetable': timetable__function(),
+            'timetable': timetable__function(day_start_end['today_j']),
             'staff_calendar': staff_calendar,
             'staff_time_data_id': staff_time_data_id,
             'today': today,
         })
 
     def post(self, request, *args, **kwargs):
+        year = self.kwargs.get('year')
+        month = self.kwargs.get('month')
+        day = self.kwargs.get('day')
 
         form = StaffWorkInputForm(request.POST or None)
         submit_type = request.POST.getlist('submit')[0]
@@ -431,29 +460,37 @@ class StaffWorkInputView(LoginRequiredMixin, TemplateView):
         if submit_type == '削除':
             staffwork = StaffWork.objects.get(id=int(staff_work_id[0]))
             staffwork.delete()
-            return redirect('menu')
+            return redirect('staff_calendar', year, month, day)
 
         if form.is_valid():
             # postデータを展開
-            start = form.cleaned_data['start']
-            end = form.cleaned_data['end']
+            start = form.cleaned_data['start'].split(":")
+            end = form.cleaned_data['end'].split(":")
+            start_time = make_aware(datetime(year=year, month=month, day=day, hour=int(start[0]), minute=int(start[1])))
+            end_time = make_aware(datetime(year=year, month=month, day=day, hour=int(end[0]), minute=int(end[1])))
 
-            # postされた日付データがあるかを探して、あれば削除
-            re_val = day_start_end_setting__function(start.year, start.month, start.day)
-            datetime_start = re_val['today_j']
-            re_val = day_start_end_setting__function(end.year, end.month, end.day)
-            datetime_end = re_val['today_j']
-
-            staffwork = StaffWork.objects.filter(staff_id_id=int(staff_id[0]), start__gte=datetime_start, end__lte=datetime_end)
-            ## 削除判定
-            if (staffwork):
-                staffwork.delete()
-            ## データ登録
-            staffwork = StaffWork()
-            staffwork.staff_id_id = int(staff_id[0])
-            staffwork.start = start
-            staffwork.end = end
-            staffwork.save()
+            if staff_work_id[0] == 'None':
+                ## データ登録
+                staffwork = StaffWork()
+                staffwork.staff_id_id = int(staff_id[0])
+                staffwork.start = start_time
+                staffwork.end = end_time
+                staffwork.save()
+            elif staff_work_id:
+                ## データ登録
+                staffwork = StaffWork.objects.get(id=int(staff_work_id[0]))
+                ## 更新判定
+                if staffwork:
+                    staffwork.start = start_time
+                    staffwork.end = end_time
+                    staffwork.save()
+            else:
+                ## データ登録
+                staffwork = StaffWork()
+                staffwork.staff_id_id = int(staff_id[0])
+                staffwork.start = start_time
+                staffwork.end = end_time
+                staffwork.save()
 
         # else:
         # フォームが無効な場合の処理
@@ -462,13 +499,14 @@ class StaffWorkInputView(LoginRequiredMixin, TemplateView):
         #   for error in errors:
         #     print(f"{field}: {error}")
 
-        return redirect('menu')
+        return redirect('staff_calendar', year, month, day)
 
 
 class StaffBookingInputView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
 
         my_training_id = self.kwargs.get('training_id')
+        training_no = self.kwargs.get('training_no')
         my_booking_id = self.kwargs.get('booking_id')
         year = self.kwargs.get('year')
         month = self.kwargs.get('month')
@@ -479,15 +517,15 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
         user_data = None
         if user_id:
             user_data = CustomUser.objects.get(id=int(user_id))
-
         if year:
             today = date(year=year, month=month, day=day)
         else:
             today = date.today()
-        day_start_end = day_start_end_setting__function(year, month, day)
+        day_start_end = day_start_end_setting__function(today.year, today.month, today.day)
         start_date = day_start_end['today_j']
         end_date = day_start_end['end_date_j']
-        start = hour_minute_second__function(today, str(hour), str(minute), "00")
+        #start = hour_minute_second__function(today, str(hour), str(minute), "00")
+        start = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=hour, minute=minute))
         end = start + timedelta(hours=1)
 
         # エラーメッセージ設定
@@ -502,11 +540,14 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
         # bookings クエリセットを取得する
         bookings = Booking.objects.filter(start__gte=start_date, end__lte=end_date, del_flg=0).order_by('training_no')
 
+        # bookings クエリセットを取得する
+        exbookings = ExBooking.objects.filter(start__gte=start_date, end__lte=end_date, is_valid=1)
+
         # bookingデータ編集
-        booking_results = booking_results__function(bookings, my_booking_id)
+        booking_results = booking_results__function(bookings, exbookings, my_booking_id)
 
         # トレーニング側作成
-        training_detail = training_detail__function(training_data)
+        training_detail = training_detail__function(training_data, start)
 
         # 休館日・ブロック取得
         bg_data = ClosingDay.objects.filter(start__gte=day_start_end['start_date_j'], start__lte=day_start_end['end_date_j'])
@@ -531,24 +572,25 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
                 booking_member_first_name = bookings['first_name']
                 booking_member_last_name = bookings['last_name']
 
-        if user_id:
+        if booking_results:
+            # booking_resultsがある場合、initialで初期値を設定
+            form = StaffBookingInputForm(
+                initial={
+                    'booking_id': int(booking_id) if booking_id else None,
+                    'start': booking_start.strftime('%H:%M') if booking_start else start.strftime('%H:%M'),
+                    'end': booking_end.strftime('%H:%M') if booking_end else end.strftime('%H:%M'),
+                    'training_no': booking_training_no + 1 if booking_training_no else training_no + 1,
+                }
+            )
+        else:
+            # POSTデータがある場合はリクエストから取得
             form = StaffBookingInputForm(
                 request.POST or None,
                 initial={
                     'booking_id': None,
-                    'start': start if start else None,
-                    'end': end if end else None,
-                    'training_no': None,
-                }
-            )
-        else:
-            form = StaffBookingInputForm(
-                request.POST or None,
-                initial={
-                    'booking_id': booking_id,
-                    'start': booking_start.strftime('%Y-%m-%d %H:%M:%S') if booking_start else None,
-                    'end': booking_end.strftime('%Y-%m-%d %H:%M:%S') if booking_end else None,
-                    'training_no': booking_training_no,
+                    'start': start.strftime('%H:%M'),
+                    'end': end.strftime('%H:%M'),
+                    'training_no': training_no + 1,
                 }
             )
 
@@ -563,19 +605,19 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
             'month': month,
             'day': day,
             'today': today,
-            'timetable': timetable__function,
+            'timetable': timetable__function(day_start_end['today_j']),
             'training': training_detail,
             'training_data': training_data,
             'form': form,
-            'booking_training_no': booking_training_no,
             'booking_member_name': booking_member_name,
             'select_user': user_data,
-            'err_msg': err_msg,
+            'rr_msg': err_msg,
         })
 
     def post(self, request, *args, **kwargs):
         form = StaffBookingInputForm(request.POST or None)
         my_training_id = self.kwargs.get('training_id')
+        training_no = self.kwargs.get('training_no')
         my_booking_id = self.kwargs.get('booking_id')
         year = self.kwargs.get('year')
         month = self.kwargs.get('month')
@@ -586,6 +628,7 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
         if request.session.get('user_pk'):
             user_pk = int(request.session.get('user_pk')[0])
         submit_type = request.POST.getlist('submit')[0]
+        action_type = request.POST.get('action_type')
 
         # 今日の設定
         if year:
@@ -596,6 +639,7 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
         day_start_end = day_start_end_setting__function(today.year, today.month, today.day)
         start_date = day_start_end['today_j']
         end_date = day_start_end['end_date_j']
+        start = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=hour, minute=minute))
 
         # トレーニングデータ取得
         training_data = Training.objects.filter(id=my_training_id, del_flg=0).order_by('display_num')
@@ -603,11 +647,14 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
         # bookings クエリセットを取得する
         bookings = Booking.objects.filter(start__gte=start_date, end__lte=end_date, del_flg=0).order_by('training_no')
 
+        # bookings クエリセットを取得する
+        exbookings = ExBooking.objects.filter(start__gte=start_date, end__lte=end_date, is_valid=1)
+
         # bookingデータ編集
-        booking_results = booking_results__function(bookings, my_booking_id)
+        booking_results = booking_results__function(bookings, exbookings, my_booking_id)
 
         # トレーニング側作成
-        training_detail = training_detail__function(training_data)
+        training_detail = training_detail__function(training_data, start)
 
         # 休館日・ブロック取得
         bg_data = ClosingDay.objects.filter(start__gte=day_start_end['start_date_j'], start__lte=day_start_end['end_date_j'])
@@ -615,11 +662,11 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
         # トレーニングデータ埋め込み
         training_detail = training_detail_make__function(training_detail, booking_results, today, bg_data)
 
+        booking_old_data = None
         if form.is_valid():
             if form.cleaned_data['booking_id']:
                 booking_old_data = Booking.objects.get(id=int(form.cleaned_data['booking_id']))
-            training_no = int(
-                request.POST.getlist('training_no')[0]) - 1  # <input type="hidden" name="booking_id"のvalueを取得
+            training_no = int(request.POST.getlist('training_no')[0]) - 1  # <input type="hidden" name="booking_id"のvalueを取得
 
             # 削除の場合
             if submit_type == '削除':
@@ -631,63 +678,112 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
                 booking.end = booking_old_data.end
                 booking.del_flg = 1
                 booking.save()
-                return redirect('menu')
+
+                # メールの送信
+                if action_type == 'submit':
+                    # 送信しない
+                    pass
+                elif action_type == 'send_mail_submit':
+                    # email_send
+                    master_data = Master.objects.get(id=1)
+                    site_url = master_data.site_url
+                    shop_tel = master_data.shop_tel1
+                    context = {
+                        'user_name': booking_old_data.user.first_name + ' ' + booking_old_data.user.last_name,
+                        'start_datetime': booking_old_data.start.strftime("%Y-%m-%d %H:%M"),
+                        'end_datetime': booking_old_data.end.strftime("%Y-%m-%d %H:%M"),
+                        'site_url': site_url,
+                        'shop_tel': shop_tel,
+                        'training_name': booking_old_data.training.name
+                    }
+                    email_templates_id = 2 #【Peak Conditions】トレーニングのご予約をキャンセルしました
+                    send_email__function(booking_old_data.user.email, context, email_templates_id)
+
+                return redirect('staff_calendar', year, month, day)
 
             # 終了時間を開始時間の１時間後に定義
-            start_end_time = form.cleaned_data['start'] + timedelta(hours=1)
+            start = form.cleaned_data['start'].split(":")
+            start_time = make_aware(datetime(year=year, month=month, day=day, hour=int(start[0]), minute=int(start[1])))
+            start_time_45before = start_time - timedelta(minutes=45)
+            start_end_time = start_time + timedelta(hours=1)
 
             # 休館日重複チェック_black
-            closing_exist_data = find_closing_exist_days__function('B', form.cleaned_data['start'], start_end_time,
-                                                         my_training_id, None)
+            closing_exist_data = find_closing_exist_days__function('B', start_time, start_end_time, my_training_id, None)
             if closing_exist_data and closing_exist_data[0].closing_type == 'B':
                 err_cd = 10  # 選択した時間帯には黒ブロックが設定されているため、登録できません
-                return redirect('staff_booking_input', my_training_id, my_training_id, user_pk, err_cd, year, month,
-                                day, hour, minute)
+                return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, user_pk, err_cd, year, month, day, hour, minute)
 
-            if closing_exist_data and closing_exist_data[0].closing_type == 'G' and closing_exist_data[
-                0].training_no == training_no \
-                    and closing_exist_data[0].start == form.cleaned_data['start'] and closing_exist_data[
-                0].end == start_end_time:
-                err_cd = 20  # 選択した時間帯には灰ブロックが設定されているため、登録できません
-                return redirect('staff_booking_input', my_training_id, my_training_id, user_pk, err_cd, year, month,
-                                day, hour, minute)
+            if closing_exist_data and closing_exist_data[0].closing_type == 'G' and closing_exist_data[0].training_no == training_no \
+               and closing_exist_data[0].start == form.cleaned_data['start'] and closing_exist_data[0].end == start_end_time:
+                 err_cd = 20  # 選択した時間帯には灰ブロックが設定されているため、登録できません
+                 return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, user_pk, err_cd, year, month, day, hour, minute)
 
             # 重複チェック
             if form.cleaned_data['booking_id']:
-                booking_exist_data = Booking.objects.filter(start__gte=form.cleaned_data['start'],
-                                                            start__lt=start_end_time,
-                                                            training=booking_old_data.training, training_no=training_no,
-                                                            del_flg=0)
+                booking_exist_data = Booking.objects.filter(start__gte=start_time_45before, start__lt=start_end_time, training=booking_old_data.training, training_no=training_no,del_flg=0)
             else:
-                booking_exist_data = Booking.objects.filter(start__gte=form.cleaned_data['start'],
-                                                            start__lt=start_end_time, training=my_training_id,
-                                                            training_no=training_no, del_flg=0)
+                booking_exist_data = Booking.objects.filter(start__gte=start_time_45before, start__lt=start_end_time, training=my_training_id, training_no=training_no, del_flg=0)
 
-            if (booking_exist_data):
+            if booking_exist_data:
                 err_cd = 50  # 選択した時間帯には既に予約があるため、登録できません
-                return redirect('staff_booking_input', my_training_id, my_training_id, user_pk, err_cd, year, month,
-                                day, hour, minute)
-
+                return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, user_pk, err_cd, year, month, day, hour, minute)
             else:
                 if form.cleaned_data['booking_id']:
                     booking = Booking()
                     booking.id = form.cleaned_data['booking_id']
                     booking.training = booking_old_data.training
                     booking.user = booking_old_data.user
-                    booking.start = form.cleaned_data['start']
-                    booking.end = form.cleaned_data['start'] + timedelta(hours=1)
+                    booking.start = start_time
+                    booking.end = start_end_time
                     booking.training_no = training_no
                     booking.save()
-                    return redirect('menu')
+                    # メールの送信
+                    if action_type == 'submit':
+                        # 送信しない
+                        pass
+                    elif action_type == 'send_mail_submit':
+                        # email_send
+                        master_data = Master.objects.get(id=1)
+                        site_url = master_data.site_url
+                        context = {
+                            'user_name': booking_old_data.user.first_name + ' ' + booking_old_data.user.last_name,
+                            'start_datetime': start_time.strftime('%Y-%m-%d %H:%M'),
+                            'end_datetime': start_end_time.strftime('%Y-%m-%d %H:%M'),
+                            'site_url': site_url,
+                            'training_name': booking.training.name
+                        }
+                        email_templates_id = 5 # 【Peak Conditions】トレーニングのご予約に変更があります
+                        send_email__function(booking_old_data.user.email, context, email_templates_id)
+
+                    return redirect('staff_calendar', year, month, day)
                 else:
                     booking = Booking()
                     booking.training = Training.objects.get(id=my_training_id)
                     booking.user = CustomUser.objects.get(id=user_pk)
-                    booking.start = form.cleaned_data['start']
-                    booking.end = form.cleaned_data['start'] + timedelta(hours=1)
+                    booking.start = start_time
+                    booking.end = start_end_time
                     booking.training_no = training_no
                     booking.save()
-                    return redirect('menu')
+                    # メールの送信
+                    if action_type == 'submit':
+                        # 送信しない
+                        pass
+                    elif action_type == 'send_mail_submit':
+                        # email_send
+                        master_data = Master.objects.get(id=1)
+                        site_url = master_data.site_url
+                        context = {
+                            'user_name': booking.user.first_name + ' ' + booking.user.last_name,
+                            'start_datetime': start_time.strftime('%Y-%m-%d %H:%M'),
+                            'end_datetime': start_end_time.strftime('%Y-%m-%d %H:%M'),
+                            'site_url': site_url,
+                            'training_name': booking.training.name
+                        }
+                        email_templates_id = 6 # 【Peak Conditions】トレーニングのご予約のご案内
+                        send_email__function(booking.user.email, context, email_templates_id)
+
+                    return redirect('staff_calendar', year, month, day)
+
 
         # else:
         # フォームが無効な場合の処理
@@ -707,13 +803,14 @@ class StaffBookingInputSearchView(LoginRequiredMixin, TemplateView):
 
     def post(self, request, *args, **kwargs):
         training_id = self.kwargs.get('training_id')
+        training_no = self.kwargs.get('training_no')
         year = self.kwargs.get('year')
         month = self.kwargs.get('month')
         day = self.kwargs.get('day')
         hour = self.kwargs.get('hour')
         minute = self.kwargs.get('minute')
 
-        pass_prm = {'training_id': training_id, 'year': year, 'month': month, 'day': day, 'hour': hour,
+        pass_prm = {'training_id': training_id,'training_no': training_no,'year': year, 'month': month, 'day': day, 'hour': hour,
                     'minute': minute}
 
         post_list_json = json.dumps(request.POST)
@@ -741,6 +838,10 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
         first_date = day_start_end['start_date_j']
         last_day = day_start_end['last_day']
         target_date = start_date.strftime('%Y-%m-%d')
+        if hour:
+            start = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=int(hour), minute=int(minute)))
+        else:
+            start = start_date
 
         days = days_today_setting_function(first_date, last_day, start_date)
         start_day = day_start_end['start_date_j']
@@ -780,7 +881,7 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
         training_data = Training.objects.filter(del_flg=0).order_by('display_num')
 
         # トレーニング側作成
-        training_detail = training_detail__function(training_data)
+        training_detail = training_detail__function(training_data, start)
 
         # 休館日・ブロック取得
         bg_data = ClosingDay.objects.filter(start__gte=start_day, start__lte=end_day)
@@ -796,10 +897,12 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
 
         # ブロックがない時間（ハイフン）がクリックされたとき、フォームにその時間をセットする
         if (blackgray):
-            datetime_start = hour_minute_second__function(today, str(hour), str(minute), "00")
+            #datetime_start = hour_minute_second__function(today, str(hour), str(minute), "00")
+            datetime_start= make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=hour, minute=minute))
             datetime_end = datetime_start + timedelta(hours=1)
         else:  # 初期表示時は黒ブロックの９時をセットする
-            datetime_start = hour_minute_second__function(today, str("09"), str("00"), "00")
+            #datetime_start = hour_minute_second__function(today, str("09"), str("00"), "00")
+            datetime_start= make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=9, minute=0))
             datetime_end = datetime_start + timedelta(hours=1)
 
         # ブロックをクリックしたときは、formに値をセット
@@ -821,8 +924,8 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
             request.POST or None,
             initial={
                 'closing_id': closing_id,
-                'start': datetime_start,
-                'end': datetime_end,
+                'start': timezone.localtime(datetime_start).strftime('%H:%M') if datetime_start else timezone.localtime(datetime_start).strftime('%H:%M'),
+                'end': timezone.localtime(datetime_end).strftime('%H:%M') if datetime_end else timezone.localtime(datetime_end).strftime('%H:%M'),
                 'training': training,
                 'training_no': training_no,
                 'closing_type': closing_type,
@@ -844,7 +947,7 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
             'day_t': today.day,
             'today': today,
             'target_date': target_date,
-            'timetable': timetable__function,
+            'timetable': timetable__function(day_start_end['today_j']),
             'training': training_detail,
             'training_data': training_data,
             'err_cd': err_cd,
@@ -853,16 +956,21 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
         })
 
     def post(self, request, *args, **kwargs):
-        form = StaffBookingInputForm(request.POST or None)
+        form = StaffClosingInputForm(request.POST or None)
         closing_type = request.POST.getlist('closing_type')[0]
         training_id = request.POST.getlist('training_id')[0]  # <input type="hidden" name="training_id"のvalueを取得
         #training_no = int(request.POST.getlist('training_no')[0]) - 1  # <input type="hidden" name="training_no"のvalueを取得
         closing_id = request.POST.getlist('closing_id')
-        today_str = (request.POST.getlist('target_date')[0])
-        today = datetime.strptime(today_str, '%Y-%m-%d')
+        #today_str = (request.POST.getlist('target_date')[0])
+        # today = datetime.strptime(today_str, '%Y-%m-%d')
         year = self.kwargs.get('year')
         month = self.kwargs.get('month')
         day = self.kwargs.get('day')
+        if year:
+            today = date(year=year, month=month, day=day)
+        else:
+            today = date.today()
+
 
         # 削除ボタンが押された場合
         del_closing = request.POST.getlist('closeDel')
@@ -873,11 +981,14 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
 
         if form.is_valid():
             # postデータを展開
-            start = form.cleaned_data['start']
-            end = form.cleaned_data['end']
+            start = form.cleaned_data['start'].split(":")
+            end = form.cleaned_data['end'].split(":")
+            start_time = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=int(start[0]), minute=int(start[1])))
+            end_time = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=int(end[0]), minute=int(end[1])))
 
-            # 休館日重複チェック
-            closing_exist_data = find_closing_exist_days__function(closing_type, start, end, training_id, None)
+
+        # 休館日重複チェック
+            closing_exist_data = find_closing_exist_days__function(closing_type, start_time, end_time, training_id, None)
 
             if closing_exist_data:
                 err_cd = 99
@@ -889,8 +1000,8 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
                     closingday.delete()
                     closingday = ClosingDay()
                     closingday.closing_type = closing_type
-                    closingday.start = start
-                    closingday.end = end
+                    closingday.start = start_time
+                    closingday.end = end_time
                     closingday.training_id = training_id
                     #if closing_type == 'G':
                     #    closingday.training_no = training_no
@@ -898,14 +1009,20 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
                 else:
                     closingday = ClosingDay()
                     closingday.closing_type = closing_type
-                    closingday.start = start
-                    closingday.end = end
+                    closingday.start = start_time
+                    closingday.end = end_time
                     closingday.training_id = training_id
                     #if closing_type == 'G':
                     #    closingday.training_no = training_no
                     closingday.save()
+        else:
+            #フォームが無効な場合の処理
+            for field, errors in form.errors.items():
+              # 各項目のエラーメッセージを取得
+              for error in errors:
+                print(f"{field}: {error}")
 
-            return redirect('staff_closing_day', year, month, day)
+        return redirect('staff_closing_day', today.year, today.month, today.day)
 
 
 class StaffPersonalView(LoginRequiredMixin, TemplateView):
@@ -1073,37 +1190,345 @@ class StaffWorkCntView(LoginRequiredMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         return redirect('menu')
 
+class StaffExBookingInputView(LoginRequiredMixin, TemplateView):
+    def get(self, request, *args, **kwargs):
+
+        training_data = Training.objects.get(id=self.kwargs['training_id'])
+        year = self.kwargs.get('year')
+        month = self.kwargs.get('month')
+        day = self.kwargs.get('day')
+        hour = self.kwargs.get('hour')
+        minute = self.kwargs.get('minute')
+        ex_booking_data = None
+        actual_list = None
+        if self.kwargs.get('exbooking_id'):
+            ex_booking_data = ExBooking.objects.get(id=int(self.kwargs.get('exbooking_id')))
+            objective_data = ex_booking_data.objective
+            # objectiveが文字列の場合でもリストに変換
+            if isinstance(objective_data, str):
+                try:
+                    actual_list = str(ast.literal_eval(objective_data))
+                except (ValueError, SyntaxError):
+                    # 単一選択値をリスト化
+                    actual_list = [objective_data]
+            else:
+                actual_list = objective_data
+
+        if year:
+            today = date(year=year, month=month, day=day)
+        else:
+            today = date.today()
+        start = make_aware(datetime.combine(today, time(hour=hour, minute=minute, second=0)))
+        end = start + timedelta(hours=1)
+
+        form = StaffExBookingForm(request.POST or None,
+                             initial={
+                                 'first_name': ex_booking_data.first_name if ex_booking_data else None,
+                                 'last_name': ex_booking_data.last_name if ex_booking_data else None,
+                                 'sex': str(ex_booking_data.sex) if ex_booking_data else None,
+                                 'age': str(ex_booking_data.age) if ex_booking_data else None,
+                                 'people': str(ex_booking_data.people) if ex_booking_data else None,
+                                 'email': ex_booking_data.email if ex_booking_data else None,
+                                 'tel_number': ex_booking_data.tel_number if ex_booking_data else None,
+                                 'objective': ex_booking_data.objective if ex_booking_data else None,
+                                 'remarks': ex_booking_data.remarks if ex_booking_data else None,
+                                 'ex_booking_id': ex_booking_data.id if ex_booking_data else None,
+                             }
+                             )
+
+        return render(request, 'app/staff_exbooking_input.html', {
+            'training_data': training_data,
+            'start': start,
+            'end': end,
+            'form': form,
+            'objective': actual_list,
+        })
+
+    def post(self, request, *args, **kwargs):
+        ex_booking_data_id = self.kwargs.get('exbooking_id') # 更新の場合
+        training_data = Training.objects.get(id=self.kwargs['training_id'])
+        year = self.kwargs.get('year')
+        month = self.kwargs.get('month')
+        day = self.kwargs.get('day')
+        hour = self.kwargs.get('hour')
+        minute = self.kwargs.get('minute')
+        start = make_aware(datetime(year=year, month=month, day=day, hour=hour, minute=minute))
+        end = start + timedelta(hours=1)
+        action_type = request.POST.get('action_type')
+
+        if ex_booking_data_id:
+            ex_booking_data = get_object_or_404(ExBooking, id=int(ex_booking_data_id))
+            other_ExBooking_data = ExBooking.objects.filter(training=training_data, start=start, is_valid=1).exclude(id=ex_booking_data_id)
+        else:
+            ex_booking_data = None
+            other_ExBooking_data = None  # 明示的に None を設定
+
+        form = StaffExBookingForm(request.POST)
+
+        if other_ExBooking_data:
+            return render(request, 'app/staff_exbooking_input.html', {
+                'training_data': training_data,
+                'start': start,
+                'end': end,
+                'form': form,
+                'err_cd': 99
+            })
+
+        if 'update' in request.POST and ex_booking_data: # 更新の場合
+            # データベースに保存
+            if form.is_valid():
+                ex_booking_data.training = training_data
+                ex_booking_data.start = start
+                ex_booking_data.end = end
+                ex_booking_data.first_name = form.cleaned_data['first_name']
+                ex_booking_data.last_name = form.cleaned_data['last_name']
+                if form.cleaned_data['sex']:
+                    ex_booking_data.sex = form.cleaned_data['sex'][0]
+                if form.cleaned_data['age']:
+                    ex_booking_data.age = form.cleaned_data['age']
+                if form.cleaned_data['people']:
+                    ex_booking_data.people = form.cleaned_data['people'][0]
+                ex_booking_data.email = form.cleaned_data['email']
+                ex_booking_data.tel_number = form.cleaned_data['tel_number']
+                ex_booking_data.objective = ",".join(form.cleaned_data['objective'])
+                ex_booking_data.remarks = form.cleaned_data['remarks']
+                ex_booking_data.status = '5'
+                ex_booking_data.expiration_date = start
+                ex_booking_data.updated_by = 'StaffExBookingInputView'
+                ex_booking_data.version += 1
+                ex_booking_data.save()
+
+                #スタッフ入力での体験トレーニング内容の変更はメールを送らない
+
+                return redirect('staff_calendar', year, month, day)
+
+        if 'input' in request.POST: #新規の場合
+            # データベースに保存
+            if form.is_valid():
+                ex_booking_data = ExBooking()
+                ex_booking_data.training = training_data
+                ex_booking_data.start = start
+                ex_booking_data.end = end
+                ex_booking_data.first_name = form.cleaned_data['first_name']
+                ex_booking_data.last_name = form.cleaned_data['last_name']
+                if form.cleaned_data['sex']:
+                    ex_booking_data.sex = form.cleaned_data['sex'][0] #label
+                if form.cleaned_data['age']:
+                    ex_booking_data.age = form.cleaned_data['age'] #value
+                if form.cleaned_data['people']:
+                    ex_booking_data.people = form.cleaned_data['people'][0] #label
+                ex_booking_data.email = form.cleaned_data['email']
+                ex_booking_data.tel_number = form.cleaned_data['tel_number']
+                ex_booking_data.objective = ",".join(form.cleaned_data['objective'])
+                ex_booking_data.remarks = form.cleaned_data['remarks']
+                ex_booking_data.status = '5'
+                ex_booking_data.expiration_date = start
+                ex_booking_data.updated_by = 'StaffExBookingInputView'
+                ex_booking_data.version += 1
+                ex_booking_data.save()
+
+                # メールの送信
+                if action_type == 'submit':
+                    # 送信しない
+                    pass
+                elif action_type == 'send_mail_submit':
+                    # email_send
+                    master_data = Master.objects.get(id=1)
+                    site_url = master_data.site_url
+                    shop_tel = master_data.shop_tel1
+                    context = {
+                        'user_name': ex_booking_data.first_name + ' ' + ex_booking_data.last_name,
+                        'start_datetime': start.strftime("%Y-%m-%d %H:%M"),
+                        'end_datetime': end.strftime("%Y-%m-%d %H:%M"),
+                        'site_url': site_url,
+                        'shop_tel': shop_tel,
+                        'training_name': ex_booking_data.training.name
+                    }
+                    email_templates_id = 7 # 【Peak Conditions】体験トレーニングのご案内
+                    send_email__function(ex_booking_data.email, context, email_templates_id)
+
+                return redirect('staff_calendar', year, month, day)
+            else:
+                #フォームが無効な場合の処理
+                for field, errors in form.errors.items():
+                  # 各項目のエラーメッセージを取得
+                  for error in errors:
+                    print(f"{field}: {error}")
+
+        if 'delete' in request.POST: # 削除の場合
+            if form.is_valid():
+                ex_booking_data.training = training_data
+                ex_booking_data.start = start
+                ex_booking_data.end = end
+                ex_booking_data.first_name = form.cleaned_data['first_name']
+                ex_booking_data.last_name = form.cleaned_data['last_name']
+                if form.cleaned_data['sex']:
+                    ex_booking_data.sex = form.cleaned_data['sex'][0] # label
+                if form.cleaned_data['age']:
+                    ex_booking_data.age = form.cleaned_data['age'] #value
+                if form.cleaned_data['people']:
+                    ex_booking_data.people = form.cleaned_data['people'][0] # label
+                ex_booking_data.email = form.cleaned_data['email']
+                ex_booking_data.tel_number = form.cleaned_data['tel_number']
+                ex_booking_data.objective = ",".join(form.cleaned_data['objective'])
+                ex_booking_data.remarks = form.cleaned_data['remarks']
+                ex_booking_data.status = '5'
+                ex_booking_data.version += 1
+                ex_booking_data.is_valid = 0
+                ex_booking_data.save()
+
+                # メールの送信
+                if action_type == 'submit':
+                    # 送信しない
+                    pass
+                elif action_type == 'send_mail_submit':
+                    # email_send
+                    master_data = Master.objects.get(id=1)
+                    site_url = master_data.site_url
+                    shop_tel = master_data.shop_tel1
+                    context = {
+                        'user_name': ex_booking_data.first_name + ' ' + ex_booking_data.last_name,
+                        'start_datetime': start.strftime("%Y-%m-%d %H:%M"),
+                        'end_datetime': end.strftime("%Y-%m-%d %H:%M"),
+                        'site_url': site_url,
+                        'shop_tel': shop_tel,
+                        'training_name': ex_booking_data.training.name
+                    }
+                    email_templates_id = 8 #【Peak Conditions】体験トレーニングご予約キャンセルのご案内
+                    send_email__function(ex_booking_data.email, context, email_templates_id)
+
+                return redirect('staff_calendar', year, month, day)
+
+
+        if 'back' in request.POST:
+           return redirect('staff_calendar', year, month, day)
+
+        return redirect('staff_calendar', year, month, day)
 
 #################
 # ---関数エリア---
 #################
+def timetable__function(current_datetime):
 
-def timetable__function():
+    """
+    タイムテーブルを作成し、現時刻が「今日」の場合のみフラグを立てる。
+
+    Parameters:
+    current_datetime (datetime): 対象日時
+
+    Returns:
+    dict: タイムテーブル辞書（現時刻が今日の場合にフラグ付き）
+    """
+    # 今日の日付
+    today = datetime.now().date()
+
+    # current_datetimeが今日でない場合、タイムテーブルだけを返す
+    if current_datetime.date() != today:
+        return create_empty_timetable()
+
     # タイムテーブル作成
-    timetable = {}
-    # 9時～19時
-    for hour in range(9, 20):
-        row = {}
-        for minute in [0, 15, 30, 45]:
-            row[minute] = 0
-        timetable[hour] = row
+    timetable = create_empty_timetable()
+
+    # 現在の時刻
+    current_hour = current_datetime.hour
+    current_minute = current_datetime.minute
+
+    # 分を15分単位に調整
+    if current_minute < 15:
+        minute_slot = 0
+    elif current_minute < 30:
+        minute_slot = 15
+    elif current_minute < 45:
+        minute_slot = 30
+    else:
+        minute_slot = 45
+
+    # 今日の場合、時刻にフラグを立てる
+    if current_hour in timetable:
+         timetable[current_hour]["hour_flag"] = 1  # 時間フラグを立てる
+         timetable[current_hour]["minutes"][minute_slot] = 1  # 分単位のフラグ
+
+    # ダミーデータを設定
+    # timetable[11]["hour_flag"] = 1  # 時間フラグを立てる
+    # timetable[11]["minutes"][30] = 1  # 分単位のフラグ
 
     return timetable
 
 
-def training_detail__function(training_data):
-    # 各トレーニングの出力情報を編集
+def create_empty_timetable():
+    """
+    空のタイムテーブルを作成。
+    """
+    timetable = {}
+    for hour in range(9, 20):
+        row = {
+            "hour_flag": 0,  # 時間フラグ
+            "minutes": {0: 0, 15: 0, 30: 0, 45: 0}  # 分単位
+        }
+        timetable[hour] = row
+    return timetable
+
+    # 分を15分単位に丸めるロジック
+def get_nearest_minute(minute):
+    if minute < 15:
+        return 0
+    elif minute < 30:
+        return 15
+    elif minute < 45:
+        return 30
+    else:
+        return 45
+
+def training_detail__function(training_data, current_datetime):
+    """
+    トレーニング詳細を作成し、今日の日付の場合に最も近い時間帯に `minute_now_flg` を追加。
+
+    Parameters:
+    - training_data: トレーニングデータのリスト
+    - current_datetime: 現在日時 (datetimeオブジェクト)
+
+    Returns:
+    - dict: トレーニング詳細
+    """
+    # 今日の日付を取得
+    today = datetime.now().date()
+    current_hour = current_datetime.hour
+    current_minute = current_datetime.minute
+
+    # 現在の15分単位を取得
+    nearest_minute = get_nearest_minute(current_minute)
+
+    # トレーニング詳細作成
     training_detail = {}
     for training in training_data:
         training_no = {}
-        for duplicates_num in range(0, training.duplicates_num):
-            #     # 9時～19時
+        for duplicates_num in range(training.duplicates_num):
             timetable = {}
             for hour in range(9, 20):
                 row = {}
                 for minute in [0, 15, 30, 45]:
-                    row[minute] = {'skip_flg': 0, 'booking_id': '', 'name': '', 'training_id': '',
-                                   'this_booking_flg': 0, 'blackgray': '', 'closing_id': ''}
+                    # 基本データを設定
+                    row[minute] = {
+                        'skip_flg': 0,
+                        'booking_id': '',
+                        'name': '',
+                        'training_id': '',
+                        'training_no': 0,
+                        'this_booking_flg': 0,
+                        'blackgray': '',
+                        'closing_id': '',
+                        'ex_flg': 1 if training.experience_flg == 1 else 0,
+                        'minute_now_flg': 0  # デフォルトは0
+                    }
+
+                    # 今日で現在時刻に近い場合に minute_now_flg を1にする
+                    if today == current_datetime.date() and hour == current_hour and minute == nearest_minute:
+                        row[minute]['minute_now_flg'] = 1
+
+                    # ダミーフラグ：11時30分の場合
+                    # if hour == 11 and minute == 30:
+                    #     row[minute]['minute_now_flg'] = 1  # ダミーフラグ
+
                 timetable[hour] = row
             training_no[duplicates_num] = timetable
         training_detail[training] = training_no
@@ -1111,7 +1536,7 @@ def training_detail__function(training_data):
     return training_detail
 
 
-def booking_results__function(bookings, my_booking_id):
+def booking_results__function(bookings, exbookings, my_booking_id):
     # bookingデータを編集
     booking_results = []
     # 結果を表示
@@ -1133,13 +1558,33 @@ def booking_results__function(bookings, my_booking_id):
             'booking_end': booking_end_jst,
             'first_name': user.first_name,
             'last_name': user.last_name,
-            'this_booking_flg': this_booking_flg
+            'this_booking_flg': this_booking_flg,
         })
+
+    for exbooking in exbookings:
+        # 日本時間に変換
+        booking_start_jst = exbooking.start.astimezone(pytz.timezone('Asia/Tokyo'))
+        booking_end_jst = exbooking.end.astimezone(pytz.timezone('Asia/Tokyo'))
+
+        this_booking_flg = 0
+        if exbooking.id == my_booking_id:
+            this_booking_flg = 1
+
+        booking_results.append({
+            'booking_id': exbooking.id,
+            'booking_training_id': exbooking.training,
+            'booking_training_no': 0,
+            'booking_start': booking_start_jst,
+            'booking_end': booking_end_jst,
+            'first_name': exbooking.first_name,
+            'last_name': exbooking.last_name,
+            'this_booking_flg': this_booking_flg,
+        })
+
     return booking_results
 
 
 def training_detail_make__function(training_detail, booking_results, today, bg_data):
-    japan_timezone = pytz.timezone('Asia/Tokyo')  # 日本のタイムゾーンを設定
     # トレーニングデータを埋め込む
     for training_name in training_detail:
         for training_no in training_detail[training_name]:
@@ -1148,44 +1593,39 @@ def training_detail_make__function(training_detail, booking_results, today, bg_d
                 for training_minute in training_detail[training_name][training_no][training_hour]:
 
                     # 時間を定義
-                    str_type = str(today) + " " + str(training_hour) + ":" + str(training_minute) + ":00"
-                    datetime_calendar = datetime.strptime(str_type, '%Y-%m-%d %H:%M:%S')
-                    datetime_calendar = japan_timezone.localize(datetime_calendar)
+                    datetime_calendar = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=training_hour, minute=training_minute))
 
                     ## 15分後を算出
-                    re_val = later_15minute__function(training_minute, training_hour)
+                    datetime_calendar_end = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=training_hour, minute=training_minute)) + timedelta(minutes=15)
 
-                    datetime_calendar_end = make_aware(
-                        datetime(year=today.year, month=today.month, day=today.day, hour=re_val['hour_end'],
-                                 minute=re_val['minute_end']))
+                    training_detail[training_name][training_no][training_hour][training_minute]['training_id'] = training_name.id
+                    training_detail[training_name][training_no][training_hour][training_minute]['training_no'] = training_no
 
-                    training_detail[training_name][training_no][training_hour][training_minute][
-                        'training_id'] = training_name.id
-
+                    # bookingデータが有るとき
                     if booking_results:
                         for training_data_r in booking_results:
                             if training_name == training_data_r['booking_training_id'] \
                                     and training_no == training_data_r['booking_training_no'] \
-                                    and datetime_calendar < training_data_r['booking_end'] and datetime_calendar_end > \
-                                    training_data_r['booking_start']:
+                                    and datetime_calendar < training_data_r['booking_end'] and datetime_calendar_end > training_data_r['booking_start']:
 
                                 # 直前のbooking_id を見る
                                 if (booking_id_before == training_data_r['booking_id']):
-                                    training_detail[training_name][training_no][training_hour][training_minute][
-                                        'skip_flg'] = 1
+                                    training_detail[training_name][training_no][training_hour][training_minute]['skip_flg'] = 1
                                 else:
-                                    training_detail[training_name][training_no][training_hour][training_minute][
-                                        'skip_flg'] = 0
+                                    training_detail[training_name][training_no][training_hour][training_minute]['skip_flg'] = 0
                                 # 直前のbooking_idをセット
                                 booking_id_before = training_data_r['booking_id']
 
-                                training_detail[training_name][training_no][training_hour][training_minute][
-                                    'booking_id'] = training_data_r['booking_id']
-                                training_detail[training_name][training_no][training_hour][training_minute]['name'] = \
-                                training_data_r['first_name'] + " " + training_data_r['last_name']
-                                training_detail[training_name][training_no][training_hour][training_minute][
-                                    'this_booking_flg'] = training_data_r['this_booking_flg']
+                                training_detail[training_name][training_no][training_hour][training_minute]['booking_id'] = training_data_r['booking_id']
+                                training_detail[training_name][training_no][training_hour][training_minute]['name'] = training_data_r['first_name'] + " " + training_data_r['last_name']
+                                training_detail[training_name][training_no][training_hour][training_minute]['this_booking_flg'] = training_data_r['this_booking_flg']
 
+                            elif training_name == training_data_r['booking_training_id'] \
+                                    and training_no == training_data_r['booking_training_no'] \
+                                    and datetime_calendar < training_data_r['booking_end'] - timedelta(minutes=45) and datetime_calendar_end > training_data_r['booking_start'] - timedelta(minutes=45) :
+                                training_detail[training_name][training_no][training_hour][training_minute]['skip_flg'] = 2 # 予約がある45分前までは予約できない
+
+                    # ブロックデータ編集
                     if bg_data:
                         for bg_detail in bg_data:
                             # ブロックデータがある場合は埋め込み
@@ -1203,18 +1643,6 @@ def training_detail_make__function(training_detail, booking_results, today, bg_d
                         #     booking_id_before = ''
 
     return training_detail
-
-
-def later_15minute__function(minute_calendar, hour_calendar):
-    ## 15分後を算出
-    if minute_calendar == 0 or minute_calendar == 15 or minute_calendar == 30:
-        hour_end = hour_calendar
-        minute_end = minute_calendar + 15
-    else:
-        hour_end = hour_calendar + 1
-        minute_end = 0
-
-    return {'hour_end': hour_end, 'minute_end': minute_end}
 
 
 def member_serach_list__function(serach_val):
@@ -1245,71 +1673,13 @@ def member_serach_list__function(serach_val):
 
 
 def find_closing_day__function(day, closing_data_all):
-    japan_timezone = pytz.timezone('Asia/Tokyo')  # 日本のタイムゾーンを設定
-    day_p = str(day.year) + "-" + str(day.month) + "-" + str(day.day) + " " + "00:00:00"
-    day_ymd = datetime.strptime(day_p, '%Y-%m-%d %H:%M:%S')
-    day_ymd_jp = japan_timezone.localize(day_ymd)
+    day_ymd_jp = make_aware(datetime(year=day.year, month=day.month, day=day.day, hour=0, minute=0))
 
     for closing_day in closing_data_all:
         if day_ymd_jp == closing_day.start:
             return {'closing_day': 1}
 
     return {'closing_day': 0}
-
-
-def find_closing_exist_days__function(closing_type, start, end, training_id, training_no):
-    # 休館日検索
-    closing_exist_data = None
-    if closing_type == 'B': # 時間帯制限
-        closing_exist_data = ClosingDay.objects.filter(start__lt=end, end__gt=start, training=training_id,
-                                                       closing_type__in=('B', 'G'))
-    elif closing_type == 'G': # 一部時間帯制限
-        closing_exist_data = ClosingDay.objects.filter(
-            (Q(closing_type='G') & Q(training_no=training_no)) | Q(closing_type='B'), start__lt=end, end__gt=start,
-            training=training_id)
-    elif closing_type == 'C': # Close:全休
-        closing_exist_data = ClosingDay.objects.filter(start__lte=end, end__gte=start, closing_type=('C'))
-
-    return closing_exist_data
-
-
-def day_start_end_setting__function(year, month, day):
-    # 休館日を取得
-    japan_timezone = pytz.timezone('Asia/Tokyo')  # 日本のタイムゾーンを設定
-
-    # start section　2024/1/1 月初作成
-    first_day = 1
-    start_date_str = str(year) + "-" + str(month) + "-" + str(first_day) + " " + "00:00:00"  # 2024/1/1 00:00:00
-    start_date_datetime = datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
-    start_date_j = japan_timezone.localize(start_date_datetime)
-    start_date = date(year, month, first_day)
-
-    # end section
-    last_day = calendar.monthrange(year=year, month=month)[1]  # 31日
-    emd_date_str = str(year) + "-" + str(month) + "-" + str(last_day) + " " + "23:59:59"
-    end_date_datetime = datetime.strptime(emd_date_str, '%Y-%m-%d %H:%M:%S')
-    end_date_j = japan_timezone.localize(end_date_datetime)
-    end_date = date(year, month, last_day)
-
-    # today section　2024/1/xx xx:xx:xx
-    today_str = str(year) + "-" + str(month) + "-" + str(day) + " " + "00:00:00"  # 2024/1/1 00:00:00
-    today_datetime = datetime.strptime(today_str, '%Y-%m-%d %H:%M:%S')
-    today_j = japan_timezone.localize(today_datetime)
-
-    row = {'start_date_j': start_date_j, 'end_date_j': end_date_j, 'start_date': start_date, 'end_date': end_date,
-           'last_day': last_day, 'today_j': today_j}
-
-    return row
-
-
-def hour_minute_second__function(date_data, hour, minute, second):
-    japan_timezone = pytz.timezone('Asia/Tokyo')  # 日本のタイムゾーンを設定
-    datetime_str = str(date_data) + " " + str(hour) + ":" + str(minute) + ":" + str(second)
-    datetime_tmp = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
-    datetime_j = japan_timezone.localize(datetime_tmp)
-
-    return datetime_j
-
 
 def err_setting_function(err_cd):
     # エラーメッセージ編集

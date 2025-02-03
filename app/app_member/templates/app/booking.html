@@ -5,7 +5,8 @@
 {% load bootstrap4 %}
 {% block content %}
 
-<div class="card my-5 col-md-5 text-center input_check_box">
+<h1 class="text-center my-2">予約</h1>
+<div class="card my-3 col-md-5 text-center input_check_box">
     <div class="card-body ">
         <h4 class="card-title bg-info">予約内容</h4>
         <table class="shadow-sm table table-bordered bg-light">
@@ -31,7 +32,7 @@
                 <thead class="thead-light">
                 <tr>
                     <th class="header">お名前</th>
-                    <td class="data form_wrap form_wrap__2col">
+                    <td class="">
                         {{ user_data.first_name }} {{ user_data.last_name }}
                     </td>
                 </tr>

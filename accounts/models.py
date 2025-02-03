@@ -89,6 +89,8 @@ class Training(models.Model):
     image = models.ImageField(upload_to='images', verbose_name='イメージ画像', null=True, blank=True)
     duplicates_num = models.IntegerField('重複数', default=1)
     del_flg = models.IntegerField('削除フラグ', default=0)
+    created_at = models.DateTimeField('作成時間', default=timezone.now)
+    updated_at = models.DateTimeField('更新時間', auto_now=True)
 
     def __str__(self):
         return self.name

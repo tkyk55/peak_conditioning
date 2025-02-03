@@ -90,6 +90,11 @@ h2 {
     box-shadow: none;
 }
 
+.form-control_peak{
+    display: inline;
+    width: 50%;
+}
+
 .calendar img {
     height: 150px;
     object-fit: contain;
@@ -110,3 +115,12 @@ h2 {
 .table thead th {
     vertical-align: middle;
 }
+
+.form_wrap {
+    gap: 0;
+}
+
+.peak__member_table {
+    border: 0.15rem solid black; /* 太さと色を指定 */
+}
+

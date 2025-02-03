@@ -99,6 +99,10 @@ h2 {
     color: #ffffff
 }
 
+.input_check_box {
+    margin: 40px auto;
+}
+
 .calendar img {
     height: 150px;
     object-fit: contain;
@@ -131,8 +135,10 @@ h2 {
     background-color: #e9ecef !important;
 }
 
+
+
 .table td {
-    color: #e9ecef
+    color: #2b2b2b
 }
 
 .table td.training_link a{
@@ -167,4 +173,29 @@ h2 {
 .peak__title {
     font-size: 1.3em;
     margin: 1em;
+}
+
+.table-bordered th.border-left-thick,.table-bordered td.border-left-thick {
+    border-left: 4px solid red; /* 太さと色を指定 */
+    border-right:none;
+}
+
+.table-bordered th.border-none-thick {
+    border: none; /* 太さと色を指定 */
+}
+
+.table-bordered td.border-black, .table-bordered th.border-black {
+    border-right: 1px solid black; /* 太さと色を指定 */
+}
+
+.peak__staff_table {
+    border: 0.15rem solid black; /* 太さと色を指定 */
+}
+
+.table-bordered .thead-light th {
+    border-right: 1px solid black; /* 太さと色を指定 */
+}
+
+.form-control_staff_booking{
+    width:6rem;
 }

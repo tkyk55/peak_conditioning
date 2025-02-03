@@ -38,7 +38,7 @@ class ProfileEditView(View):
 
     def post(self, request, *args, **kwargs):
         form = ProfileForm(request.POST or None)
-        if form.is_valid():
+        if 'profile_update' in request.POST and form.is_valid():
             user_data = CustomUser.objects.get(id=request.user.id)
             user_data.first_name = form.cleaned_data['first_name']
             user_data.last_name = form.cleaned_data['last_name']
@@ -49,6 +49,12 @@ class ProfileEditView(View):
                 user_data.image = request.FILES.get('image')
             user_data.save()
             return redirect('profile')
+        else:
+            # フォームが無効な場合の処理
+            for field, errors in form.errors.items():
+            #   # 各項目のエラーメッセージを取得
+               for error in errors:
+                  print(f"{field}: {error}")
 
         return render(request, 'accounts/profile.html', {
             'form': form

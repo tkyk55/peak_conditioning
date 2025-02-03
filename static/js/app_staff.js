@@ -1,6 +1,6 @@
 function delCheck(){
-    var checked = confirm("削除します");
-    if (checked == true) {
+    let checked = confirm("削除します");
+    if (checked === true) {
         return true;
     } else {
         return false;
@@ -8,17 +8,13 @@ function delCheck(){
 }
 
 function updateynCheck(){
-    var checked = confirm("更新します");
-    if (checked == true) {
-        return true;
-    } else {
-        return false;
-    }
+    let checked = confirm("更新します");
+    return checked === true;
 }
 
 function editCheck() {
     // 選択されているラジオボタンの値を取得する
-    var selectedRadio = document.querySelector("input[name='select_staff']:checked");
+    let selectedRadio = document.querySelector("input[name='select_staff']:checked");
 
     // 選択されているラジオボタンがない場合
     if (!selectedRadio) {
@@ -28,30 +24,13 @@ function editCheck() {
     }
 }
 
-function entCheck() {
-    var startValueByName = $("input[name='start']").val();
-    var minutesPart = startValueByName.split(":")[1];
-    if (minutesPart === "00" || minutesPart === "15" || minutesPart === "30" || minutesPart === "45") {
-        return true;
-    } else {
-        alert("00分,15分,30分,45分を選択してください");
-        return false;
-    }
-}
-
 function daytimeInputCheck() {
-    var startValueByName = $("input[name='start']").val();
-    var endValueByName = $("input[name='end']").val();
-    var targetDateValueByName = $("input[name='target_date']").val();
+    let startTime = $('#id_start option:selected').val();
+    let endTime = $('#id_end option:selected').val();
 
-    // 分を抜き出す
-    var startMinutesPart = startValueByName.split(":")[1];
-    var endMinutesPart = endValueByName.split(":")[1];
-
-    // Dateオブジェクトを作成
-    var startDate = new Date(startValueByName);
-    var endDate = new Date(endValueByName);
-    var targetDate = new Date(targetDateValueByName);
+    // 時間を Date オブジェクトに変換
+    let startDate = new Date('1970-01-01T' + startTime + ':00');
+    let endDate = new Date('1970-01-01T' + endTime + ':00');
 
     // 時間を比較
     if(startDate >= endDate) {
@@ -59,70 +38,116 @@ function daytimeInputCheck() {
         return false;
     }
 
-    // 分が "00", "15", "30", "45" でないかチェック
-    var validMinutes = ["00", "15", "30", "45"];
-    if(!validMinutes.includes(startMinutesPart)) {
-        alert("エラー: 開始の分は00分, 15分, 30分, 45分のいずれかを選択してください");
-        return false;
-    }
-    if(!validMinutes.includes(endMinutesPart)) {
-        alert("エラー: 終了の分は00分, 15分, 30分, 45分のいずれかを選択してください");
-        return false;
-    }
+    return true;
+}
 
-    // 年、月、日を取り出す
-    var startYear = startDate.getFullYear();
-    var startMonth = startDate.getMonth();
-    var startDay = startDate.getDate();
-    var startHours = startDate.getHours();
+function StaffBookingInputCheck() {
+    let startTime = $('#id_start option:selected').val();
+    let endTime = $('#id_end option:selected').val();
 
-    var endYear = endDate.getFullYear();
-    var endMonth = endDate.getMonth();
-    var endDay = endDate.getDate();
-    var endHours = endDate.getHours();
-    var endMinutes = endDate.getMinutes();
+    // 時間を Date オブジェクトに変換
+    let startDate = new Date('1970-01-01T' + startTime + ':00');
+    let endDate = new Date('1970-01-01T' + endTime + ':00');
 
-    var targetYear = targetDate.getFullYear();
-    var targetMonth = targetDate.getMonth();
-    var targetDay = targetDate.getDate();
+    // console.log(startDate);
+    // console.log(endDate);
 
-    consolelog(targetYear);
-    consolelog(targetMonth);
-    consolelog(targetDay);
-
-
-    // 年、月、日を比較
-    if(startYear === targetYear && startMonth === targetMonth && startDay === targetDay && endYear === targetYear && endMonth === targetMonth && endDay === targetDay) {
-    } else {
-        alert("エラー: 日付を変更しないでください");
+    // 時間を比較
+    if(startDate >= endDate) {
+        alert("開始時刻が終了時刻より大きい、または同じです。確認してください");
         return false;
     }
 
-    if(startHours < 9 ){
-        alert("エラー: 開始は9時より前にしないでください");
-        return false;
-    }
+    let registration_hour = $('#id_registration_hour').val();
+    let userConfirmed = false; // userConfirmed を関数スコープで定義
 
-    if(startHours > 19 ){
-        alert("エラー: 開始は19時より後にしないでください");
-        return false;
-    }
 
-    if(endHours < 9 ){
-        alert("エラー: 終了は9時より前にしないでください");
-        return false;
-    }
-
-    if(endHours === 20 && endMinutes > 0){
-        alert("エラー: 終了は20時より後にしないでください");
-        return false;
-    }
-
-    if(endHours > 20){
-        alert("エラー: 終了は20時より後にしないでください");
-        return false;
+    if (startTime !== registration_hour) {
+        if (registration_hour) {
+            let userConfirmed = confirm("時間が変更されています。時間変更のメールを送信しますか？");
+            if (userConfirmed === true) {
+                // アクションタイプをメール送信に変更
+                $('#id_action_type').val('send_mail_submit');
+                return true;
+            } else {
+                return true;
+            }
+        } else {
+            let userConfirmed = confirm("予約を入力した旨のメールを送信しますか？");
+            if (userConfirmed === true) {
+                // アクションタイプをメール送信に変更
+                $('#id_action_type').val('send_mail_submit');
+                return true;
+            } else {
+                return true;
+            }
+        }
     }
 
     return true;
 }
 
+function StaffExBookingCheck() {
+    // 体験予約時の確認
+
+    const id_first_name = $("#id_first_name").val().trim(); // 入力値を取得し、空白を削除
+    if (id_first_name === "") {
+        alert("姓を入力してください。");
+        return false; // 送信を中止
+    }
+
+    const id_last_name = $("#id_last_name").val().trim(); // 入力値を取得し、空白を削除
+    if (id_last_name === "") {
+        alert("名を入力してください。");
+        return false; // 送信を中止
+    }
+
+    // 性別が選択されているか？
+    if (!$('input[type="radio"][name="sex"]').is(':checked')){
+        alert("性別を選択してください");
+        return false;
+    }
+
+    // 年齢が選択されているか？
+    if (!$('input[type="radio"][name="age"]').is(':checked')){
+        alert("年齢を選択してください");
+        return false;
+    }
+
+    // 人数が選択されているか？
+    if (!$('input[type="radio"][name="people"]').is(':checked')){
+        alert("人数を選択してください");
+        return false;
+    }
+
+    const id_email = $("#id_email").val().trim(); // 入力値を取得し、空白を削除
+    if (id_email === "") {
+        alert("Emailを入力してください。");
+        return false; // 送信を中止
+    }
+
+    let userConfirmed = confirm("予約を入力した旨のメールを送信しますか？");
+    if (userConfirmed === true) {
+        // アクションタイプをメール送信に変更
+        $('#id_action_type').val('send_mail_submit');
+        return true;
+    } else {
+        return true;
+    }
+
+}
+
+function StaffExBookingDelCheck() {
+    let checked = confirm("削除します");
+    if (checked === true) {
+        let checked = confirm("予約を削除した旨のメールを送信しますか？");
+        if (checked === true) {
+            $('#id_action_type').val('send_mail_submit');
+            return true;
+        } else {
+            return true;
+        }
+    } else {
+        return false;
+    }
+}

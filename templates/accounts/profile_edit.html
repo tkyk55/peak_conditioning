@@ -28,18 +28,14 @@
                 <tr>
                     <th class="header">性別</th>
                     <td class="data">
-                        <label class="form-label">性別</label>
-                        <select class="form-control" id="id_sex" name="sex">
-                            <option value="0" {% if user_data.sex == 0 %}selected{% endif %}>選択しない</option>
-                            <option value="1" {% if user_data.sex == 1 %}selected{% endif %}>男性</option>
-                            <option value="2" {% if user_data.sex == 2 %}selected{% endif %}>女性</option>
-                        </select>
+                        {% render_field form.sex class="form-control" placeholder="性別" %}
                     </td>
                 </tr>
 
                 <tr>
                     <th class="header">電話</th>
                     <td class="data">
+                        <label class="form-label">例: 03-1234-5678、045-123-4567、0120-123-456</label>
                        {% render_field form.tel_number class="form-control" placeholder="090-1111-2222" %}
                     </td>
                 </tr>
@@ -53,10 +49,9 @@
                 </tbody>
             </table>
             <div class="button mx-auto">
-                <button class="btn btn-lg btn-warning btn-block" href="{% url 'profile_edit'%}" >
-                    登録する
-                </button>
+                <td><input class="btn btn-primary" type="submit" name="profile_update" id="id_profile_update" value="登録する" onClick="return profileCheck()"></td>
             </div>
+            {% csrf_token %}
         </form>
     </div>
 </div>

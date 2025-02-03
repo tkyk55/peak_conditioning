@@ -151,10 +151,9 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
+DEFAULT_FROM_EMAIL = 'mgtk@mgtk.net'
 
 MEDIA_URL = '/media/'
 
@@ -176,7 +175,8 @@ except ImportError:
 # ローカル用設定
 if DEBUG:
     ALLOWED_HOSTS = ['*']
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' #test
+    #EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' #real_send
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 if not DEBUG:

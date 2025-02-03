@@ -45,10 +45,10 @@
             </div>
         </div>
         <div class="">
-            <table class="table table-bordered bg-light">
+            <table class="table table-bordered bg-light peak__member_table">
                 <thead class="thead-light">
                 <tr>
-                    <th></th>
+                    <th>時間</th>
                     {% for day in days %} {% if day.weekday == 5 %}
                     <th scope="col" class="text-primary">{{ day | date:"d(D)" }}</th>
                     {% elif day.weekday == 6 %}
@@ -62,7 +62,7 @@
                 {% for hour, schedules in calendar.items %}
                    {% for minute, schedules_minute in schedules.items %}
                     <tr>
-                        <td class="row">{{ hour }}:{{ minute }}</td>
+                        <td class="">{{ hour }}:{{ minute }}</td>
                         {% for datetime, book in schedules_minute.items %}
                         <td>
                             {% if datetime < today %}

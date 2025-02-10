@@ -194,5 +194,5 @@ if not DEBUG:
     # EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
     # EMAIL_USE_TLS = True
 
-    STATIC_ROOT = '/usr/share/nginx/html/static'
-    MEDIA_ROOT = '/usr/share/nginx/html/media'
+    STATIC_ROOT = '/var/www/myproject/static/'
+    MEDIA_ROOT = '/var/www/myproject/media/'

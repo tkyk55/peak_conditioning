@@ -1,0 +1,31 @@
+<nav class="navbar navbar-dark bg-primary">
+    <div class="container-fluid">
+        <div>
+            <a class="navbar-brand" href="/">
+                <span class="text-primary bg-white" style="font-size: 3rem;">P</span>
+            </a>
+        </div>
+
+        {% if user.is_authenticated %}
+
+        <div class="card-footer text-muted text-conter">
+            <a href="{% url 'menu' %}">メニュー</a>
+        </div>
+        <div class="card-footer text-muted text-conter">
+            <a href="{% url 'reserve' %}">予約する</a>
+        </div>
+
+
+        <div class="text-light nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                 ようこそ {{ user.get_username }} さん
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="{% url 'profile' %}">マイページ</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'logout' %}">ログアウト</a></li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</nav>

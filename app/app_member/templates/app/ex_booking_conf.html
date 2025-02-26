@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% block title %}booking{% endblock %}
+{% load bootstrap4 %}
+{% block content %}
+
+<h1 class="text-center my-2">体験予約確認</h1>
+<div class="card my-3 col-md-7 text-center input_check_box">
+    <h4 class="card-title bg-info my-3">予約内容</h4>
+    <table class="shadow-sm table table-bordered bg-light">
+        <thead class="thead-light">
+        <tr>
+            <th class="header">トレーニング</th>
+            <td class="data">{{ training_data }}</td>
+        </tr>
+        <tr>
+            <th class="header">日程</th>
+            <td class="data">
+            　　{{ start }} ~ {{ end }}
+                <input type="hidden" name="start" id="input_start" value="{{ start }}">
+                <input type="hidden" name="end" id="input_end" value="{{ end }}">
+            </td>
+        </tr>
+        </thead>
+    </table>
+    <h4 class="card-title text-center  bg-info my-3">予約者情報</h4>
+    <form method="post">
+        {% csrf_token %}
+        <table class="shadow-sm table bg-light">
+            <tbody>
+            <thead class="thead-light">
+            <tr>
+                <th class="header">お名前<span class="text-danger">*</span></th>
+                <td class="data">
+                    {{ form.first_name.value }}  {{ form.last_name.value }}
+                    <input type="hidden" name="first_name" id="input_first_name" value="{{ form.first_name.value }}">
+                    <input type="hidden" name="last_name" id="input_last_name" value="{{ form.last_name.value }}">
+                </td>
+            </tr>
+
+            <tr>
+                <th class="header">性別<span class="text-danger">*</span></th>
+                <td class="data">
+                    {% for value, label in form.sex.field.choices %}
+                        {% if value == form.sex.value %}
+                            {{ label }}
+                            <input type="hidden" name="sex" id="input_sex" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+
+            <tr>
+                <th class="header">年齢<span class="text-danger">*</span></th>
+                <td class="data form_wrap form_wrap__2col">
+                    {% for value, label in form.age.field.choices %}
+                        {% if value == form.age.value %}
+                            {{ label }}
+                            <input type="hidden" name="age" id="input_age" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+
+            <tr>
+                <th class="header">人数<span class="text-danger">*</span></th>
+                <td class="data">
+                    {% for value, label in form.people.field.choices %}
+                        {% if value == form.people.value %}
+                            {{ label }}
+                            <input type="hidden" name="people" id="input_people" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+
+            <tr>
+                <th class="header">Email<span class="text-danger">*</span></th>
+                <td class="data">
+                    {{ form.email.value }}
+                    <input type="hidden" name="email" id="input_email" value="{{ form.email.value }}">
+                </td>
+            </tr>
+
+            <tr>
+                <th class="header">携帯電話</th>
+                <td class="data">
+                    {{ form.tel_number.value }}
+                    <input type="hidden" name="tel_number" id="input_tel_number" value="{{ form.tel_number.value }}">
+                </td>
+            </tr>
+
+            <tr>
+                <th class="header">目的</th>
+                <td class="data">
+                        {% for value in form.objective.value %}
+                            {% for choice_value, label in form.objective.field.choices %}
+                                {% if value == choice_value %}
+                                    <span>{{ label }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    <input type="hidden" name="objective" id="input_objective" value="{{ form.objective.value }}">
+                </td>
+            </tr>
+
+            <tr>
+                <th class="header">伝えたいこと</th>
+                <td class="data" >
+                    {{ form.remarks.value }}
+                    <input type="hidden" name="remarks" id="input_remarks" value="{{ form.remarks.value }}">
+                </td>
+            </tr>
+
+            </thead>
+            </tbody>
+        </table>
+        <div class="button mx-auto my-3">
+            <input type="hidden" name="training" id="training" value="{{ training_data.0.pk }}">
+            {% if status == '2' %}
+                <input class="btn btn-primary" type="submit" name="delete" id="ex_booking_del" value="取り消す" onClick="return exBookingDel()">
+            {% else %}
+                <input class="btn btn-warning" type="submit" name="back" id="ex_booking_bak" value="戻る" >
+                <input class="btn btn-primary" type="submit" name="submit" id="ex_booking" value="予約する" >
+            {% endif %}
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}

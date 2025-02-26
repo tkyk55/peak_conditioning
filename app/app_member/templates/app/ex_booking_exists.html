@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% block title %}booking{% endblock %}
+{% load bootstrap4 %}
+{% block content %}
+
+<div class="text-center my-5">
+    <h1 class="mb-5">申し訳ありません。</h1>
+    <p class="mb-4">先に予約が入ってしまいました。カレンダーに戻って、予約可能な日程を選択してください。</p>
+    <a class="btn btn-primary" href="{% url 'ex_calendar' training_data.pk %}">体験トレーニングカレンダーに戻る</a>
+    <a class="btn btn-primary" href="/">ホームに戻る</a>
+</div>
+
+
+{% endblock %}

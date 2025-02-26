@@ -1,0 +1,44 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}member_list{% endblock %}
+{% load bootstrap4 %}
+{% load widget_tweaks %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-mid-10 col-sm-12">
+        <h2 class="card-title text-center">【会員リスト】</h2>
+        <form action="" method="POST">
+            <div class="md-4 shadow-sm">
+                <table class="table table-bordered bg-light">
+                    <thead class="thead-light">
+                    <tr><th class="header">選択</th>
+                        <th class="header">番号</th>
+                        <th class="header">氏名</th>
+                        <th class="header">性別</th>
+                        <th class="header">携帯番号</th>
+                    </tr>
+                    {% for user in user_detail %}
+                    <tr class=""><label><td class="data"><input type="radio" id="selectChoice1" name="select_user" value="{{ user.pk }}" /></td>
+                               <td class="data text-secondary">{{ user.member_no }}</td>
+                               <td class="data text-secondary">{{ user.first_name }}&emsp;{{ user.last_name }}</td>
+                               <td class="data text-secondary">{% if user.sex == 0 %}男性{% endif %}{% if user.sex == 1 %}女性{% endif %}{% if user.sex == 3 %}選択なし{% endif %}</td>
+                               <td class="data text-secondary">{{ user.tel_number }}</td></label>
+                    </tr>
+                    {% endfor %}
+                    </thead>
+                </table>
+            </div>
+            <div class="button mx-auto">
+                <button class="btn btn-primary" type="submit">編集する</button>
+            </div>
+            <div class="button mx-auto mt-3">
+                <a class="btn btn-outline-secondary" href="{% url 'menu' %}">戻る</a>
+            </div>
+           　{% csrf_token %}
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

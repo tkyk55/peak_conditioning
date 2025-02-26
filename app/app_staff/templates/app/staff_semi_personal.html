@@ -1,0 +1,27 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}semi_personal_cnt{% endblock %}
+{% load bootstrap4 %}
+{% load widget_tweaks %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <h2 class="card-title text-center">【セミパーソナル予約数】</h2>
+    <div class="col-lg-5 col-mid-11 col-sm-12">
+        <table class="table table-bordered bg-light">
+            <thead class="thead-light">
+            <tr><th class="text-black-30 border-left border border-dark">年</th><th class="text-black-30 border-left border border-dark">月</th><th class="text-black-30 border-left border border-dark">予約数</th></tr>
+            {% for result in results %}
+                <tr><td class="text-body border border-dark">{{ result.0 }}</td><td class="text-body border border-dark">{{ result.1 }}</td><td class="text-body border border-dark">{{ result.2 }}</td></tr>
+            {% empty %}
+            <p>まだ予約がありません</p>
+            {% endfor %}
+            </thead>
+        </table>
+        <div class="button mx-auto mt-3 mb-3">
+            <a class="btn btn-outline-secondary" href="{% url 'menu' %}">戻る</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% block title %}exemail{% endblock %}
+{% load bootstrap4 %}
+{% block content %}
+
+
+<div class="row justify-content-center">
+    <h2>この認証コードは無効です</h2>
+    <div class="col-lg-8 col-mid-5 col-sm-5">
+ 　　　　　<p>入力された認証コードは無効となっています。</p>
+         <form method="post">
+  　         {% csrf_token %}
+             <p>認証メールを再送信されたい方は「再送フォームへ」を押してください<input class="btn btn-primary" type="submit" name="resend" id="ex_booking_resend" value="再送フォームへ"></p>
+             <input type="hidden" name="email" id="ex_booking_resend_email" value="{{ email }}">
+         </form>
+        <p><a class="btn btn-primary" href="/">トップに戻る</a></p>
+    </div>
+</div>
+
+{% endblock %}

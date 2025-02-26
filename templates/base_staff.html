@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+{% load bootstrap4 %}
+{% bootstrap_css %}
+{% bootstrap_javascript jquery=True %}
+{% load static %}
+<html lang="ja">
+  <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      {% include 'css_staff.html' %}
+      {% block extra_css %}{% endblock %}
+
+    <title>{% block head_title %}{% endblock %}</title>
+    {% block extra_head %} {% endblock %}
+  </head>
+  <body>
+
+    {% include 'nav_staff.html' %}
+    {% block allauth %}
+
+    {% endblock %}
+    {% block content %}{% endblock %}
+    {% block extra_body %}{% endblock %}
+    {% include 'footer_staff.html' %}
+    {% include 'js_staff.html' %}
+  </body>
+</html>

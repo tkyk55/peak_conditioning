@@ -1,0 +1,37 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}member_search{% endblock %}
+{% load bootstrap4 %}
+{% load widget_tweaks %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-mid-9 col-sm-10">
+        <h2 class="card-title text-center">【会員検索】</h2>
+        <form method="POST">
+            <div class="md-4 shadow-sm">
+            <table class="table table-bordered bg-light">
+                <thead class="thead-light">
+                <tr><th class="header">会員番号</th><td>{% render_field form.member_no class="form-control" %}</td></tr>
+                <tr><th class="header">氏名</th><td><nobr>{% render_field form.first_name class="form-control" %}{% render_field form.last_name class="form-control" %}</nobr></td></tr>
+                <tr><th class="header">携帯番号</th><td>{% render_field form.tel_number class="form-control" %}</td></tr>
+                </thead>
+            </table>
+            </div>
+
+            <div class="button mx-auto">
+                <button class="btn btn-primary" type="submit">検索する</button>
+            </div>
+            <div class="button mx-auto mt-3">
+                <a class="btn btn-outline-secondary" href="{% url 'menu' %}">戻る</a>
+            </div>
+           　{% csrf_token %}
+        </form>
+
+    </div>
+
+</div>
+
+
+
+{% endblock %}

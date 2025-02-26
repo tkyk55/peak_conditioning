@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}calender{% endblock %}
+{% load bootstrap4 %}
+
+{% block content %}
+
+<div class="text-center my-5">
+    <div class="row">
+
+        <div class="mb-3">
+            <h1>
+                {{ training_data.0 }}<br />体験予約カレンダー
+            </h1>
+        </div>
+
+
+        <div class="col-md-6 mb-4 text-center calendar">
+            <img src="{% if training_data.0.image %} {{ training_data.0.image.url }} {% endif %}" class="img-fluid" alt="" />
+
+        </div>
+
+        <div class="col-md-6 mb-5">
+            <div class="card">
+                <div class="card-body px-2 py-1">
+                    <div class="p-4 text-left">
+                        <p>内容：{{ training_data.0.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <p>{{ start_day }}～{{ end_day }}</p>
+    </div>
+
+    <div class="col-mid-10 col-sm-12">
+        <div class="d-flex mb-2">
+            <div class="mx-3 mr-auto">
+                {% if today_flg == '1' %}
+                    <div class="btn btn-secondary">前週</div>
+                {% else %}
+                    <a class="btn btn-warning" href="{% url 'ex_calendar' training_data.0.pk before.year before.month before.day %}">前週</a>
+                {% endif %}
+            </div>
+            <div class="mx-3">
+                {% if one_month_flg == '1' %}
+                    <div class="btn btn-secondary">次週</div>
+                {% else %}
+                    <a class="btn btn-warning" href="{% url 'ex_calendar' training_data.0.pk next.year next.month next.day %}">次週</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="">
+            <table class="table table-bordered bg-light">
+                <thead class="thead-light">
+                <tr>
+                    <th></th>
+                    {% for day in days %} {% if day.weekday == 5 %}
+                    <th scope="col" class="text-primary">{{ day | date:"d(D)" }}</th>
+                    {% elif day.weekday == 6 %}
+                    <th scope="col" class="text-danger">{{ day | date:"d(D)" }}</th>
+                    {% else %}
+                    <th scope="col">{{ day | date:"d(D)" }}</th>
+                    {% endif %} {% endfor %}
+                </tr>
+                </thead>
+                <tbody>
+                {% for hour, schedules in calendar.items %}
+                    {% for minute, schedules_minute in schedules.items %}
+                        <tr>
+                        <td class="">{{ hour }}:{{ minute }}</td>
+                        {% for datetime, book in schedules_minute.items %}
+                            <td>
+                                {% if datetime < today %}
+                                    <i class="bi bi-reception-0"></i>
+                                {% elif book == 0 %}
+                                    <a href="{% url 'ex_booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-circle"></i></a>
+                                {% elif book == 1 %}
+                                    <i class="bi bi-x-lg">予約済み</i>
+                                {% elif book == 2 %}
+                                    <i class="bi bi-x-lg">2</i>
+                                {% elif book == 5 %}
+                                    <i class="bi bi-x-lg">5</i>
+                                {% elif book == 6 %}
+                                    <i class="bi bi-x-lg">6</i>
+                                {% elif book == 3 %}
+                                    <i class="bi bi-x-lg">3</i>
+                                {% elif book == 7 %}
+                                    <i class="bi bi-x-lg">7</i>
+                                {% elif book == 4 %}
+                                    <a href="{% url 'ex_booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-caret-up"></i></a>
+                                {% elif book == 20 %}
+                                    <i class="bi bi-reception-0"></i>
+                                {% elif book == 21 %}
+                                    <i class="bi bi-x-lg">21</i>
+                                {% elif book == 22 %}
+                                    <i class="bi bi-x-lg">22</i>
+                                {% elif book == 23 %}
+                                    <i class="bi bi-x-lg">23</i>
+                                {% else %}
+                                    <i class="bi bi-x-lg">e</i>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "app/base.html" %} {% load widget_tweaks %} {% block content %}
+{% load bootstrap4 %}
+
+<div class="card card-profile my-5 mx-auto">
+  <div class="card-body">
+    <h5 class="card-title text-center">体験トレーニング予約</h5>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <table class="profile_table mb-4">
+        <tbody>
+        <tr>
+          <th class="header">名前</th>
+          <td class="data form_wrap form_wrap-2">
+            {% render_field form.first_name class="form-control" placeholder="姓" %}
+            {% render_field form.last_name class="form-control" placeholder="名" %}
+          </td>
+        </tr>
+        <tr>
+          <th class="header">カナ</th>
+          <td class="data form_wrap form_wrap-2">
+            {% render_field form.first_name class="form-control" placeholder="姓" %}
+            {% render_field form.last_name class="form-control" placeholder="名" %}
+          </td>
+        </tr>
+
+        <tr>
+          <th class="header">性別</th>
+          <td class="data">
+            <label class="form-label">性別</label>
+            <select class="form-control" id="id_sex" name="sex">
+              <option value="0" {% if user_data.sex == 0 %}selected{% endif %}>選択しない</option>
+              <option value="1" {% if user_data.sex == 1 %}selected{% endif %}>男性</option>
+              <option value="2" {% if user_data.sex == 2 %}selected{% endif %}>女性</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th class="header">誕生日</th>
+          <td class="data form_wrap form_wrap-2">
+            {% render_field form.birthday class="form-control" %}
+          </td>
+        </tr>
+        <tr>
+          <th class="header">電話</th>
+          <td class="data">
+            {% render_field form.phone1 class="form-control" placeholder="090" %}
+            {% render_field form.phone2 class="form-control" placeholder="1234" %}
+            {% render_field form.phone3 class="form-control" placeholder="5678" %}
+          </td>
+        </tr>
+
+        </tbody>
+      </table>
+      <div class="button mx-auto">
+        <button class="btn btn-lg btn-warning btn-block" href="{% url 'profile_edit'%}" >
+          登録する
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

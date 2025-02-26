@@ -1,0 +1,15 @@
+### Django ###
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+.DS_Store
+images
+media
+.env
+requirements_dev.txt
+settings.py
+migrations
+.idea/

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% block title %}booking{% endblock %}
+{% load bootstrap4 %}
+{% block content %}
+
+<h1 class="text-center my-2">予約</h1>
+<div class="card my-3 col-md-5 text-center input_check_box">
+    <div class="card-body ">
+        <h4 class="card-title bg-info">予約内容</h4>
+        <table class="shadow-sm table table-bordered bg-light">
+            <thead class="thead-light">
+            <tr>
+                <th class="header">トレーニング</th>
+                <td class="data">{{ training_data.0.name }}</td>
+            </tr>
+            <tr>
+                <th class="header">日程</th>
+                <td class="data">
+                    {% for error in form.non_field_errors %}
+                    <h5 class="text-danger">{{ error|linebreaksbr }}</h5>
+                    {% endfor %} {{ year }}年{{ month }}月{{ day }}日 {{ hour }}:{{ minute }}
+                </td>
+            </tr>
+            </thead>
+        </table>
+        <h4 class="card-title bg-info">予約者情報</h4>
+        <form method="post">
+            {% csrf_token %}
+            <table class="shadow-sm table table-bordered bg-light">
+                <thead class="thead-light">
+                <tr>
+                    <th class="header">お名前</th>
+                    <td class="">
+                        {{ user_data.first_name }} {{ user_data.last_name }}
+                    </td>
+                </tr>
+                <tr>
+                    <th class="header">ご要望</th>
+                    <td class="data">
+                        {% render_field form.remarks class="form-control" %}
+                    </td>
+                </tr>
+                </thead>
+            </table>
+            <div class="button mx-auto">
+
+                <input type="hidden" name="training" id="training" value="{{ training_data.0.pk }}">
+                <button class="btn btn-lg btn-warning btn-block" type="submit">
+                    予約確定
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}

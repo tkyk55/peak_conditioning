@@ -1,0 +1,93 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}calender{% endblock %}
+{% load bootstrap4 %}
+{% load widget_tweaks %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-mid-10 col-sm-12">
+        <h2 class="card-title text-center">【会員情報入力】</h2>
+        <form action="" method="POST">
+            {% if form.errors.items %}
+              {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                  <div>{{ field }}{{ error }}</div>
+                {% endfor %}
+              {% endfor %}
+            {% endif %}
+            <div class="shadow-sm">
+            <table class="table table-bordered bg-light">
+                <thead class="thead-light">
+                <tr class="peak__row"><th class="header">会員番号</th>
+                    <td class="data">{% render_field form.member_no class="form-control" placeholder="会員番号" %}</td>
+                </tr>
+                <tr class="peak__row"><th class="header">退会</th>
+                    <td class="data">
+                        <select class="form-control" id="id_is_active" name="is_active">
+                            <option value=False {% if user_data.is_active == False %}selected{% endif %}>会員</option>
+                            <option value=True {% if user_data.is_active == True %}selected{% endif %}>退会</option>
+                        </select></td>
+                    </td>
+                </tr>
+                <tr><th class="header">氏名</th>
+                    <td class="data"><nobr>性{% render_field form.first_name class="form-control" placeholder="姓" %}&nbsp;名{% render_field form.last_name class="form-control" placeholder="名" %}<nobr></td>
+                </tr>
+                <tr><th class="header">性別</th>
+                    <td class="data">
+                        <select class="form-control" id="id_sex" name="sex">
+                            <option value="0" {% if user_data.sex == 0 %}selected{% endif %}>男性</option>
+                            <option value="1" {% if user_data.sex == 1 %}selected{% endif %}>女性</option>
+                            <option value="2" {% if user_data.sex == 2 %}selected{% endif %}>選択なし</option>
+                        </select></td>
+                </tr>
+                <tr><th class="header">生年月日</th>
+                    <td class="data">{% render_field form.birthday class="form-control" %}</td>
+                </tr>
+                <tr><th class="header">mail</th>
+                    <td class="data">{% render_field form.email class="form-control" %}</td>
+                </tr>
+                <tr><th class="header">電話番号</th>
+                    <td class="data">{% render_field form.tel_number class="form-control" %}</td>
+                </tr>
+                <tr><th class="header">回数</th>
+                    <td class="data"><nobr>{% render_field form.num_contracts class="form-control" %} 回</nobr></td>
+                </tr>
+                <tr><th class="header">期間</th>
+                    <td class="data"><nobr>開始日{% render_field form.stat_date class="form-control" %}&nbsp;～&nbsp;終了日{% render_field form.end_date class="form-control" %}</nobr></td>
+                </tr>
+                <tr><th class="header">靴預かり</th>
+                    <td class="data">
+                        <select class="form-control" id="id_is_shoes_custody" name="is_shoes_custody">
+                            <option value=False {% if user_data.num_contracts == False %}selected{% endif %}>なし</option>
+                            <option value=True {% if user_data.num_contracts == True %}selected{% endif %}>あり</option>
+                        </select></td>
+                    </td>
+                </tr>
+                <tr><th class="header">口座引き落とし金額</th>
+                    <td class="data"><nobr>{% render_field form.amount_money class="form-control" %}円</nobr></td>
+                </tr>
+                <tr><th class="header">メモ</th>
+                    <td class="data">{% render_field form.memo class="form-control" %}</td>
+                </tr>
+                </thead>
+            </table>
+            </div>
+
+            <div class="button mx-auto">
+                <input class="btn btn-primary" type="submit" name="submit" value="更新する">
+                <!-- input type="submit" name="submit" id="delete" value="削除" onClick="return delCheck()" -->
+            </div>
+            <div class="button mx-auto mt-3">
+                <a class="btn btn-outline-secondary" href="{% url 'menu' %}">戻る</a>
+            </div>
+            <input type="hidden" name="user_pk" id="id_member_input" value="{{ user_data.id }}">
+           　{% csrf_token %}
+        </form>
+    </div>
+
+</div>
+
+
+
+{% endblock %}

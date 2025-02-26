@@ -1,0 +1,114 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}calender{% endblock %}
+{% load bootstrap4 %}
+{% load widget_tweaks %}
+{% block content %}
+
+<div class="row justify-content-center text-center">
+    <h2 class="card-title text-center">【スタッフ予約入力】</h2>
+        <div class="col-lg-11 col-mid-11 col-sm-12">
+            <table class="table table-bordered bg-light peak__staff_table">
+                <thead class="thead-light">
+                <tr>
+                    <th colspan="2" class="text-black-30 border-left border border-dark">時間→</th>
+                    {% for hour in timetable %}
+                    <th colspan="4" class="text-black-30 border border-dark">{{ hour }}時</th>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <th colspan="2" class="border-dark">分</th>
+                    {% for hour, schedules in timetable.items %}
+                        {% for minute, flg in schedules.minutes.items %}
+                            <th class="{% if flag == 1 %}border-left-thick bg-warning{% endif %}{% if forloop.last %}border-dark{% endif %}">{{ minute }}</th>
+                        {% endfor %}
+                    {% endfor %}
+                </tr>
+                </thead>
+
+                {% for training_name , training_schedules in training.items %}
+                {% for training_no , training_schedules_no in training_schedules.items %}
+                <tr>
+                    <td class="text-primary">{{ forloop.counter }}</td>
+                    {% if forloop.first %}
+                    {% for training_data in training_data %}
+                    {% if training_name.id == training_data.id %}
+                    <td rowspan="{{training_data.duplicates_num}}"  class="text-primary">{{ training_name.name }}</td>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+
+                    {% for training_hour, schedules in training_schedules_no.items %}
+                    {% for training_minute, schedules_minute in schedules.items %}
+                        {% if  schedules_minute.skip_flg == 0 and schedules_minute.name != ''  %}
+                            {% if schedules_minute.this_booking_flg == 0 %}
+                                <td class="bg-primary" colspan="4" >{{ schedules_minute.name }}</td>
+                            {% else %}
+                                <td class="text-primary bg-warning" colspan="4" >{{ schedules_minute.name }}</td>
+                            {% endif %}
+                        {% elif schedules_minute.blackgray == "B" and schedules_minute.name == '' %}
+                            <td class="text-secondary" ><i class="peak__block bi bi-x-square-fill"></i></td>
+                        {% elif schedules_minute.blackgray == "G" and schedules_minute.name == '' %}
+                            <td class="text-secondary" ><i class="bi bi-x-square"></i></td>
+                        {% elif schedules_minute.skip_flg == 0 and schedules_minute.name == '' %}
+                            <td class="text-primary" ><i class="bi bi-dash"></i></td>
+                        {% elif schedules_minute.skip_flg == 2 and schedules_minute.name == '' %}
+                            <td class="text-primary" ><i class="bi bi-dash"></i></td>
+                        {% endif %}
+                    {% endfor %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                {% endfor %}
+
+            </table>
+        </div>
+
+        <div class="col-lg-5 col-mid-10 pb-4">
+        <form action="" method="POST">
+            <table class="shadow-sm table table-bordered bg-light">
+                <thead class="thead-light">
+                {% if err_msg %}<tr>{{ err_msg }}</tr>{% endif %}
+                <tr class="d-none">{% render_field form.booking_id class="d-none" %}</tr>
+
+                {% if select_user %}
+                <tr><th>顧客名</th><td class="text-secondary">{{ select_user.first_name }}{{ select_user.last_name }}</td></tr>
+                {% endif %}
+
+                <tr><th>開始時間</th>
+                    <td class="data">{% render_field form.start class="form-control_staff_booking" %}</td>
+                </tr>
+
+                <tr><th>トレーニングNo</th>
+                    <td class="data">
+                        <select class="form-control" id="training_no_select" name="training_no">
+                            {% for training_name , training_schedules in training.items %}
+                            {% for training_no , training_schedules_no in training_schedules.items %}
+                                <option value="{{forloop.counter}}"  {% if form.training_no.value == forloop.counter %}selected{% endif %} >{{forloop.counter}}</option>
+                            {% endfor %}
+                            {% endfor %}
+                        </select></td>
+                </tr>
+                </thead>
+
+            </table>
+
+            <div class="button mb-3 mx-auto">
+                <a class="btn btn-secondary" href="{% url 'staff_calendar' today.year today.month today.day %}">戻る</a>
+                <input type="submit" name="submit" value="登録" class="btn btn-primary" onClick="return StaffBookingInputCheck()">
+                <input type="hidden" name="action_type" id="id_action_type" value="submit">
+                <input type="hidden" name="user_pk" value="{{ select_user.id }}">
+            </div>
+            {% if form.booking_id.value %}
+                <input class="btn btn-warning" type="submit" name="submit" id="delete" value="削除" onClick="return StaffExBookingDelCheck()">
+            {% endif %}
+           {% csrf_token %}
+        </form>
+
+        </div>
+
+</div>
+
+
+
+{% endblock %}

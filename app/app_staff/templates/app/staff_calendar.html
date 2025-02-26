@@ -1,0 +1,141 @@
+{% extends "base_staff.html" %}
+{% load i18n %}
+{% block title %}calender{% endblock %}
+{% load bootstrap4 %}
+
+{% block content %}
+
+<div class="text-center my-0">
+    <h2 class="card-title text-center">【管理画面】</h2>
+    <div class="mr-auto">
+        <a class="btn btn-warning" href="{% url 'staff_calendar' before_day.year before_day.month before_day.day %}">前日</a>
+        <span class="peak__title">表示日:{{today | date:"Y年n月j日(D)" }}</span>
+        <a class="btn btn-warning" href="{% url 'staff_calendar' next_day.year next_day.month next_day.day %}">翌日</a>
+    </div>
+
+    <div class="col-mid-10 col-sm-12">
+        <div class="d-flex mb-2 mt-1">
+            <div class="mr-auto">
+                <a class="btn btn-warning" href="{% url 'staff_calendar' before_month.year before_month.month before_month.day %}">前月</a>
+            </div>
+            <div class="">
+                <a class="btn btn-warning" href="{% url 'staff_calendar' next_month.year next_month.month next_month.day %}">次月</a>
+            </div>
+        </div>
+
+        <table class="table table-bordered bg-light mb-0 peak__staff_table">
+            <thead class="thead-light">
+            <tr>
+                {% for day, day_details in days.items %}
+                    {% for day_detail, today_flg in day_details.items %}
+                        {% if day.weekday == 5 %}
+                            {% if today_flg == 0 %}
+                                <th scope="col"><a class="text-primary" href="{% url 'staff_calendar' day.year day.month day.day %}" >{{ day | date:"j" }}<br>{{ day | date:"(D)" }}</a></th>
+                             {% else %}
+                                <th scope="col" class=" bg-warning"><a class="text-primary" href="{% url 'staff_calendar' day.year day.month day.day %}" >{{ day | date:"j" }}<br>{{ day | date:"(D)" }}</a></th>
+                             {% endif %}
+                        {% elif day.weekday == 6 %}
+                            {% if today_flg == 0 %}
+                                <th scope="col"><a class="text-danger" href="{% url 'staff_calendar' day.year day.month day.day %}" >{{ day | date:"j" }}<br>{{ day | date:"(D)" }}</a></th>
+                            {% else %}
+                                <th scope="col" class="bg-warning"><a  class="text-danger" href="{% url 'staff_calendar' day.year day.month day.day %}" >{{ day | date:"j" }}<br>{{ day | date:"(D)" }}</a></th>
+                            {% endif %}
+                        {% else %}
+                            {% if today_flg == 0 %}
+                                <th scope="col"><a class="text-black" href="{% url 'staff_calendar' day.year day.month day.day %}" >{{ day | date:"j" }}<br>{{ day | date:"(D)" }}</a></th>
+                            {% else %}
+                                <th scope="col" class="bg-warning"><a class="text-black" href="{% url 'staff_calendar' day.year day.month day.day %}" >{{ day | date:"j" }}<br>{{ day | date:"(D)" }}</a></th>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </tr>
+            </thead>
+        </table>
+
+        <table class="table table-bordered bg-light peak__staff_table">
+            <thead class="thead-light">
+                <tr>
+                    <th colspan="3" class="text-black-30 border-left border border-dark">時間→</th>
+                    {% for hour, data in timetable.items %}
+                        <th colspan="4" class="text-black-30 border border-dark {% if data.hour_flag == 1 %}bg-warning{% endif %}">{{ hour }}時</th>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <th colspan="3" class="border-dark">↓トレーナー</th>
+                    {% for hour, data in timetable.items %}
+                      {% for minute, flag in data.minutes.items %}
+                          <th class="{% if flag == 1 %}border-left-thick bg-warning{% endif %}{% if forloop.last %}border-dark{% endif %}">{{ minute }}</th>
+                      {% endfor %}
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for staff, staff_data in staff_calendar.items %}
+                <tr>
+                    <td class="text-primary">{{ forloop.counter }}</td>
+                    {% if forloop.first %} <td rowspan="{{ staff_cnt }}" class="text-primary">勤務時間</td>{% endif %}
+                    <td class="text-primary border-black">{{ staff.first_name }}{{ staff.last_name }}</td>
+                    {% for staff_hour , staff_hour_data in staff_data.items %}
+                      {% for staff_minute, flg in staff_hour_data.items %}
+                      {% if flg.at_work_flg == 1 %}
+                        <td class="training_link bg-info {% if flg.minute_now_flg == 1 %}border-left-thick{% endif %}"><a href="{% url 'staff_work_input' staff.id today.year today.month today.day staff_hour staff_minute %}"><i class="bi bi-circle"></i></a>
+                      {% else %}
+                        <td class="text-primary {% if flg.minute_now_flg == 1 %}border-left-thick{% endif %}"><a href="{% url 'staff_work_input' staff.id today.year today.month today.day staff_hour staff_minute %}"><i class="bi bi-dash"></i></a>
+                      {% endif %}
+                      </td>
+                      {% endfor %}
+                    {% endfor %}
+
+                </tr>
+                {% endfor %}
+                <tr class="staff_training">
+                    <th colspan="3" class="border-black">↓トレーニング</th>
+                    {% for hour, data in timetable.items %}
+                        {% for minute, flag in data.minutes.items %}
+                            <th class="{% if flag == 1 %}border-left-thick{% else %}border-none-thick{% endif %}"></th>
+                        {% endfor %}
+                    {% endfor %}
+
+                </tr>
+                {% for training_name , training_schedules in training.items %}
+                    {% for training_no , training_schedules_no in training_schedules.items %}
+                        <tr>
+                            <td class="text-primary">{{ forloop.counter }}</td>
+                            {% if forloop.first %}
+                                {% for training_data in training_data %}
+                                    {% if training_name.id == training_data.id %}
+                                             <td colspan="2" rowspan="{{training_data.duplicates_num}}" {% if training_data.experience_flg == 1 %} class="text-primary bg-warning border-black" {% else %} class="text-primary border-black" {% endif %}>{{ training_name.name }}</td>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+
+                            {% for training_hour, schedules in training_schedules_no.items %}
+                                {% for training_minute, schedules_minute in schedules.items %}
+                                    {% if  schedules_minute.skip_flg == 0 and schedules_minute.name != '' and schedules_minute.ex_flg == 0  %}
+                                        <td class="bg-primary training_link {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" colspan="4" ><a href="{% url 'staff_booking_input' schedules_minute.training_id schedules_minute.training_no schedules_minute.booking_id 0 today.year today.month today.day training_hour training_minute %}">{{ schedules_minute.name }}</a></td>
+                                    {% elif schedules_minute.skip_flg == 0 and schedules_minute.name != '' and schedules_minute.ex_flg == 1 %}
+                                        <td class="bg-primary training_link {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" colspan="4" ><a href="{% url 'staff_exbooking_input' schedules_minute.training_id schedules_minute.booking_id today.year today.month today.day training_hour training_minute %}">{{ schedules_minute.name }}</a></td>
+                                    {% elif schedules_minute.blackgray == "B" and schedules_minute.name == '' %}
+                                        <td class="text-secondary {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" ><i class="peak__block bi bi-x-square-fill"></i></td>
+                                    {% elif schedules_minute.blackgray == "G" and schedules_minute.name == '' %}
+                                        <td class="text-secondary {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" ><i class="bi bi-x-square"></i></td>
+                                    {% elif schedules_minute.skip_flg == 0 and schedules_minute.name == '' %}
+                                        {% if  schedules_minute.ex_flg == 1  %}
+                            　　             <td class="text-primary {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}"><a href="{% url 'staff_exbooking_input' schedules_minute.training_id today.year today.month today.day training_hour training_minute %}"><i class="bi bi-dash"></i></a></td>
+                                        {% else %}
+                                            <td class="text-primary {% if  schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}"><a href="{% url 'staff_booking_input_search' schedules_minute.training_id schedules_minute.training_no today.year today.month today.day training_hour training_minute %}"><i class="bi bi-dash"></i></a></td>
+                                        {% endif %}
+                                    {% elif schedules_minute.skip_flg == 2 and schedules_minute.name == '' %}
+                                        <td class="text-primary {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" ><i class="bi bi-x-lg"></i></td>
+                                    {% endif %}
+                               　{% endfor %}
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

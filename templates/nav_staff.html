@@ -1,0 +1,45 @@
+<nav class="navbar navbar-dark bg-navbar">
+    <div class="container-fluid">
+        <div>
+            <a class="navbar-brand" href="{% url 'menu' %}">
+                <span class="text-muted　text-conter" >管理画面</span>
+            </a>
+        </div>
+
+        {% if user.is_authenticated %}
+
+        <div class="card-footer text-muted text-conter">
+            <a href="{% url 'member' %}">会員情報</a>
+        </div>
+        <div class="text-light nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light" href="#" id="navbarDropdown1" role="button" data-bs-toggle="dropdown" aria-expanded="false">運営情報</a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown1">
+                <li><a class="dropdown-item" href="{% url 'notification' %}">お知らせ入力</a></li>
+                <li><a class="dropdown-item" href="{% url 'staff_menu' %}">スタッフ入力</a></li>
+                <li><a class="dropdown-item" href="{% url 'staff_closing_day' %}">休館日入力</a></li>
+                <!-- li><a class="dropdown-item" href="{% url 'menu' %}">予約制限（灰ブロック）入力</a></li -->
+            </ul>
+        </div>
+        <div class="text-light nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-expanded="false">集計データ</a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                <li><a class="dropdown-item" href="{% url 'staff_personal' %}">パーソナル予約数</a></li>
+                <li><a class="dropdown-item" href="{% url 'staff_semi_personal' %}">セミパーソナル予約数</a></li>
+                <li><a class="dropdown-item" href="{% url 'staff_ex_reserve' %}">体験予約数</a></li>
+                <li><a class="dropdown-item" href="{% url 'staff_work_cnt' %}">スタッフ稼働時間</a></li>
+            </ul>
+        </div>
+
+        <div class="text-light nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light" href="#" id="navbarDropdown3" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                 ようこそ {{ user.get_username }} さん
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="{% url 'profile' %}">マイページ</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'logout' %}">ログアウト</a></li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</nav>

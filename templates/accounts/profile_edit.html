@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block content %}
+{% load bootstrap4 %}
+
+<div class="card card-profile my-5 mx-auto">
+    <div class="card-body">
+        <h5 class="card-title text-center">マイページ</h5>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <table class="profile_table mb-4">
+                <tbody>
+                <tr>
+                    <th class="header">プロフィール画像</th>
+                    <td class="data form_wrap form_wrap-2">
+                        {{ form.image }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th class="header">名前</th>
+                    <td class="data form_wrap form_wrap-2">
+                        {% render_field form.first_name class="form-control" placeholder="姓" %}
+                        {% render_field form.last_name class="form-control" placeholder="名" %}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th class="header">性別</th>
+                    <td class="data">
+                        {% render_field form.sex class="form-control" placeholder="性別" %}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th class="header">電話</th>
+                    <td class="data">
+                        <label class="form-label">例: 03-1234-5678、045-123-4567、0120-123-456</label>
+                       {% render_field form.tel_number class="form-control" placeholder="090-1111-2222" %}
+                    </td>
+                </tr>
+                <tr>
+                    <th class="header">誕生日</th>
+                    <td class="data form_wrap form_wrap-2">
+                        {% render_field form.birthday class="form-control" %}
+                    </td>
+                </tr>
+
+                </tbody>
+            </table>
+            <div class="button mx-auto">
+                <td><input class="btn btn-primary" type="submit" name="profile_update" id="id_profile_update" value="登録する" onClick="return profileCheck()"></td>
+            </div>
+            {% csrf_token %}
+        </form>
+    </div>
+</div>
+
+{% endblock %}

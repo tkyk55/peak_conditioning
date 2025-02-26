@@ -1,0 +1,55 @@
+{% extends "base.html" %} {% block content %}
+{% load bootstrap4 %}
+
+<div class="row justify-content-center card card-profile my-5 mx-auto">
+    <div class="card-body col-mid-10 col-sm-12">
+        <h5 class="card-title text-center">マイページ（予約確認）</h5>
+        <table class="profile_table mb-4">
+            <tbody>
+            <tr>
+                <th class="header">おしらせ</th>
+                <td class="data">{{ notification.0.notice }}</td>
+            </tr>
+            <tr>
+                <th class="header">契約内容</th>
+                <td class="data">{{ user_data.0.num_contracts }} 回／月{{ user_date_dif }}ヶ月</td>
+            </tr>
+            <tr>
+                <th class="header">契約期間</th>
+                <td class="data">{{ user_data.0.stat_date }} から {{ user_data.0.end_date }}</td>
+            </tr>
+            <tr>
+                <th class="header">口座引落金額</th>
+                <td class="data">{{ user_data.0.amount_money }} 円</td>
+            </tr>
+            <tr>
+                <th class="header">予約残回数</th>
+                <td class="data">{{ user_data.0.num_times }}　回</td>
+            </tr>
+
+            <tr>
+                <th class="header">予約済みトレーニング<br>
+                    {% if booking_data %}
+                      <a class="btn btn-lg btn-warning btn-block" href="{% url 'cancel' %}">予約を取り消す</a></th>
+                    {% endif %}
+                <td class="data">
+                {% for training_category in training_category %}
+                    {%for booking_data in booking_data %}
+                      {% if training_category.training == booking_data.training.id %}
+                     　　<p>{{ booking_data.training }} {{ booking_data.start }}</p>
+                      {% endif %}
+                    {% endfor %}
+                {% empty %}
+                　　<p>まだトレーニングがありません</p>
+                {% endfor %}
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="button mx-auto">
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block title %}menu{% endblock %}
+
+{% block content %}
+
+{% load bootstrap4 %}
+<div class="row justify-content-center">
+
+        <div class="card md-4 shadow-sm">
+            <div class="container">
+                <div class="row">
+                    <div class="mb-5">
+                        <h1>体験トレーニング予約</h1>
+                    </div>
+                    <p>「痛みや不調の改善」を目的とされる方はセミパーソナルトレーニングはお勧めしません。（パーソナルトレーニングをご選択ください）</p>
+                    {% for training_data in training_data %}
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card img-thumbnail storelist mb-3">
+                            <img
+                                    class="card-img-top card-thum"
+                                    src="{% if training_data.image %} {{ training_data.image.url }} {% endif %}"
+                                    alt=""
+                            />
+                            <div class="card-body text-center px-2 py-3">
+                                <h5 class="font-weight-bold">{{ training_data.name }}</h5>
+                                <p>{{ training_data.description }}</p>
+                            </div>
+                            <a class="stretched-link" href="{% url 'ex_calendar' training_data.pk %}"></a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>まだトレーニングがありません</p>
+                    {% endfor %}
+                </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

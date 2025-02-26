@@ -1,0 +1,43 @@
+{% extends "base_staff.html" %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% block title %}staff_menu_input{% endblock %}
+{% load bootstrap4 %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <h2 class="card-title text-center">{% if form.first_name.value %}【スタッフ情報更新】{% else %}【スタッフ新規入力】{% endif %}</h2>
+    <div class="col-lg-8 col-mid-10 col-sm-12">
+        <form action="" method="POST">
+            <table class="table table-bordered bg-light">
+                <thead class="thead-light">
+                <tr><th class="header">氏名</th>
+                    <td class="data"><nobr>{% render_field form.first_name class="form-control_peak" placeholder="姓" %}&nbsp;{% render_field form.last_name class="form-control_peak" placeholder="名" %}</nobr></td>
+                </tr>
+
+                <tr><th class="header">メモ</th>
+                    <td class="data">{% render_field form.memo class="form-control_staff" %}</td>
+                </tr>
+
+                {% if form.first_name.value %}
+                <tr><th class="header">アクティブ</th>
+                    <td class="data">{{ form.is_active }}</td>
+                </tr>
+                {% endif %}
+                </thead>
+            </table>
+            <div class="button mx-auto">
+                <input class="btn btn-primary" type="submit" name="submit" value="{% if form.first_name.value %}更新する{% else %}登録する{% endif %}" onClick="return updateynCheck()">
+            </div>
+            <div class="button mx-auto mt-3">
+                <a class="btn btn-outline-secondary" href="{% url 'menu' %}">戻る</a>
+            </div>
+
+            {% if form.first_name.value %}
+            <input type="hidden" name="staff_pk" id="id_staff_input" value="{{staff_pk}}">
+            {% endif %}
+            {% csrf_token %}
+        </form>
+    </div>
+</div>
+{% endblock %}

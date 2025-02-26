@@ -1,0 +1,104 @@
+body {
+    background-color: rgb(164, 222, 243);
+}
+.allauth_container{
+    width:80%;
+    max-width:300px;
+    margin:20px auto;
+}
+
+h2 {
+    margin-bottom:30px;
+    text-align:center;
+}
+
+.allauth_container .allauth_form {
+    background-color:#f4f4f4;
+    padding:30px 20px;
+    border-radius:10px;
+    box-shadow: 10px 5px 5px rgb(68, 66, 66);
+}
+
+.allauth_form input {
+    margin-bottom:20px;
+}
+.allauth_form span {
+    font-size: 10px;
+    text-align: right;
+}
+
+.allauth_form p {
+    margin:5px 0;
+    text-align: center;
+    font-size:10px;
+}
+
+.card-profile {
+    width: 700px;
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 0.2rem 0.2rem 0 rgba(0, 0, 0, 0.1);
+}
+
+.button {
+    width: 150px;
+}
+
+.btn {
+    font-size: 80%;
+    border-radius: 5rem;
+    font-weight: bold;
+}
+
+.profile_table {
+    width: 100%;
+    border: 1px solid #d1dbeb;
+    border-radius: 8px;
+    border-collapse: separate;
+    overflow: hidden;
+}
+
+.profile_table .header {
+    width: 200px;
+    padding: 16px 24px;
+    text-align: left;
+    background: #f1f5fa;
+}
+
+.profile_table .data {
+    padding: 16px 24px;
+}
+
+.bg-white {
+    background-color: #ffffff !important;
+}
+
+.text-red {
+    color: #ff0000 !important;
+}
+
+.form_wrap {
+    display: grid;
+    gap: 16px;
+}
+
+.form_wrap-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.form-control:focus {
+    box-shadow: none;
+}
+
+.calendar img {
+    height: 150px;
+    object-fit: contain;
+}
+
+.navbar a.dropdown-item {
+    color: #070707 !important
+}
+
+.navbar a {
+    color: #ffffff
+}

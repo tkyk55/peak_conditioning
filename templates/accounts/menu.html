@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}menu{% endblock %}
+{% block content %}
+{% load bootstrap4 %}
+
+{{ staff_data.0.user_id }}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-mid-10 col-sm-12">
+        <h2 class="card-title text-center">【メニュー】</h2>
+        <div class="card md-4 shadow-sm">
+            <div class="card-footer text-muted text-conter">
+              <a class="btn btn-lg btn-outline-primary btn-block" href="{% url 'reserve' %}">予約する</a>
+            </div>
+
+            <div class="card-footer text-muted text-conter">
+                <a class="btn btn-lg btn-outline-primary btn-block" href="{% url 'mypage' %}">予約を確認する（マイページ）</a>
+            </div>
+
+            <div class="card-footer text-muted text-conter">
+                <a class="btn btn-lg btn-outline-primary btn-block" href="{% url 'cancel' %}">予約をキャンセルする（マイページ）</a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block title %}menu{% endblock %}
+
+{% block content %}
+
+{% load bootstrap4 %}
+
+<h2>TOP</h2>
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-mid-06 col-sm-08">
+        <div class="card md-4 shadow-sm">
+            <div class="text-muted text-conter card-footer ">
+                <a class="btn btn-lg btn-outline-primary btn-block" href="{% url 'login' %}">会員ログイン</a>
+            </div>
+            <div class="text-muted text-conter card-footer ">
+                <a class="btn btn-lg btn-outline-primary btn-block" href="{% url 'ex_email' %}">体験トレーニング予約</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

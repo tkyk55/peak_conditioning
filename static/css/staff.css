@@ -180,6 +180,11 @@ h2 {
     border-right:none;
 }
 
+.table-bordered th.border-left-thick-hour,.table-bordered td.border-left-thick-hour {
+    border-left: 0.1rem solid #313131; /* 太さと色を指定 */
+    border-right:none;
+}
+
 .table-bordered th.border-none-thick {
     border: none; /* 太さと色を指定 */
 }
@@ -198,4 +203,48 @@ h2 {
 
 .form-control_staff_booking{
     width:6rem;
+}
+
+/* 背景全体（オーバーレイ） */
+.custom-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    display: none;  /* 初期は非表示 */
+}
+
+/* モーダル本体 */
+.custom-modal-content {
+    background: #fff;
+    border-radius: 6px;
+    max-width: 600px;
+    margin: 10% auto;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s ease;
+}
+
+/* ヘッダー */
+.custom-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+}
+
+/* 閉じるボタン */
+.close-btn {
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+/* フェードイン演出 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

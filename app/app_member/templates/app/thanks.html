@@ -6,10 +6,20 @@
 {% block content %}
 
 <div class="text-center my-5">
-    <h1 class="mb-5">ご予約ありがとうございました。</h1>
-    <p class="mb-4">お客様のご来店をスタッフ一同心よりお待ちしております。</p>
-    <a class="btn btn-primary" href="{% url 'calendar' training_data.pk %}">トレーニングカレンダーに戻る</a>
-    <a class="btn btn-primary" href="/">ホームに戻る</a>
+    <h2 class="mb-5">ご予約ありがとうございました</h2>
+    <div class="col-lg-8 col-mid-5 col-sm-5">
+        <form method="post">
+            <table class="shadow-sm table table-bordered bg-light">
+                <tbody>
+                <tr><td class="px-3 py-3" colspan="2"><p>ご予約ありがとうございました</p></td></tr>
+                <tr><td class="px-3 py-3"><p class="mb-4">お客様のご来店をスタッフ一同心よりお待ちしております。</p></td>
+                </tbody>
+            </table>
+            <div class="mt-3 md-10 mx-auto text-md-center">
+                <a class="btn btn-primary" href="/">トップに戻る</a>
+                <a class="btn btn-primary" href="{% url 'calendar' training_data.pk %}">トレーニングカレンダーに戻る</a>
+            </div>
+        </form>
 </div>
 
 

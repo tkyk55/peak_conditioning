@@ -58,14 +58,14 @@
                 <tr>
                     <th colspan="3" class="text-black-30 border-left border border-dark">時間→</th>
                     {% for hour, data in timetable.items %}
-                        <th colspan="4" class="text-black-30 border border-dark {% if data.hour_flag == 1 %}bg-warning{% endif %}">{{ hour }}時</th>
+                        <th colspan="4" class="text-black-30 border-left-thick-hour border-dark {% if data.hour_flag == 1 %}bg-warning{% endif %}">{{ hour }}時</th>
                     {% endfor %}
                 </tr>
                 <tr>
                     <th colspan="3" class="border-dark">↓トレーナー</th>
                     {% for hour, data in timetable.items %}
                       {% for minute, flag in data.minutes.items %}
-                          <th class="{% if flag == 1 %}border-left-thick bg-warning{% endif %}{% if forloop.last %}border-dark{% endif %}">{{ minute }}</th>
+                          <th class="{% if flag == 1 %}border-left-thick bg-warning{% elif flag == 2 %} border-left-thick-hour {% elif forloop.last %} border-dark {% endif %}">{{ minute }}</th>
                       {% endfor %}
                     {% endfor %}
                 </tr>
@@ -79,9 +79,9 @@
                     {% for staff_hour , staff_hour_data in staff_data.items %}
                       {% for staff_minute, flg in staff_hour_data.items %}
                       {% if flg.at_work_flg == 1 %}
-                        <td class="training_link bg-info {% if flg.minute_now_flg == 1 %}border-left-thick{% endif %}"><a href="{% url 'staff_work_input' staff.id today.year today.month today.day staff_hour staff_minute %}"><i class="bi bi-circle"></i></a>
+                        <td class="training_link bg-info {% if flg.minute_now_flg == 1 %}border-left-thick{% elif flg.hour_flg == 1 %}border-left-thick-hour{% endif %}"><a href="{% url 'staff_work_input' staff.id today.year today.month today.day staff_hour staff_minute %}"><i class="bi bi-circle"></i></a>
                       {% else %}
-                        <td class="text-primary {% if flg.minute_now_flg == 1 %}border-left-thick{% endif %}"><a href="{% url 'staff_work_input' staff.id today.year today.month today.day staff_hour staff_minute %}"><i class="bi bi-dash"></i></a>
+                        <td class="text-primary {% if flg.minute_now_flg == 1 %}border-left-thick{% elif flg.hour_flg == 1 %}border-left-thick-hour{% endif %}"><a href="{% url 'staff_work_input' staff.id today.year today.month today.day staff_hour staff_minute %}"><i class="bi bi-dash"></i></a>
                       {% endif %}
                       </td>
                       {% endfor %}
@@ -111,26 +111,61 @@
                             {% endif %}
 
                             {% for training_hour, schedules in training_schedules_no.items %}
-                                {% for training_minute, schedules_minute in schedules.items %}
-                                    {% if  schedules_minute.skip_flg == 0 and schedules_minute.name != '' and schedules_minute.ex_flg == 0  %}
-                                        <td class="bg-primary training_link {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" colspan="4" ><a href="{% url 'staff_booking_input' schedules_minute.training_id schedules_minute.training_no schedules_minute.booking_id 0 today.year today.month today.day training_hour training_minute %}">{{ schedules_minute.name }}</a></td>
-                                    {% elif schedules_minute.skip_flg == 0 and schedules_minute.name != '' and schedules_minute.ex_flg == 1 %}
-                                        <td class="bg-primary training_link {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" colspan="4" ><a href="{% url 'staff_exbooking_input' schedules_minute.training_id schedules_minute.booking_id today.year today.month today.day training_hour training_minute %}">{{ schedules_minute.name }}</a></td>
-                                    {% elif schedules_minute.blackgray == "B" and schedules_minute.name == '' %}
-                                        <td class="text-secondary {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" ><i class="peak__block bi bi-x-square-fill"></i></td>
-                                    {% elif schedules_minute.blackgray == "G" and schedules_minute.name == '' %}
-                                        <td class="text-secondary {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" ><i class="bi bi-x-square"></i></td>
-                                    {% elif schedules_minute.skip_flg == 0 and schedules_minute.name == '' %}
-                                        {% if  schedules_minute.ex_flg == 1  %}
-                            　　             <td class="text-primary {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}"><a href="{% url 'staff_exbooking_input' schedules_minute.training_id today.year today.month today.day training_hour training_minute %}"><i class="bi bi-dash"></i></a></td>
-                                        {% else %}
-                                            <td class="text-primary {% if  schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}"><a href="{% url 'staff_booking_input_search' schedules_minute.training_id schedules_minute.training_no today.year today.month today.day training_hour training_minute %}"><i class="bi bi-dash"></i></a></td>
+                                {% for training_minute, s in schedules.items %}
+                                    {% with h=training_hour m=training_minute %}
+
+                                        {# 共通クラス（左罫線の太さ） #}
+                                        {% with border_class="" %}
+                                            {% if s.minute_now_flg %}
+                                                {% with border_class="border-left-thick" %}{% endwith %}
+                                            {% elif s.hour_flg %}
+                                                {% with border_class="border-left-thick-hour" %}{% endwith %}
+                                            {% endif %}
+                                        {% endwith %}
+
+                                        {# ここから本体: 大きく skip_flg で分ける #}
+                                        {% if s.skip_flg == 0 %}
+
+                                            {# 予約済み（名前あり） #}
+                                            {% if s.name %}
+                                                <td class="bg-primary training_link {% if s.minute_now_flg %}border-left-thick{% elif s.hour_flg %}border-left-thick-hour{% endif %}" colspan="4">
+                                                    {% if s.ex_flg %}
+                                                        <a href="{% url 'staff_exbooking_input' s.training_id s.booking_id today.year today.month today.day h m %}">{{ s.name }}</a>
+                                                    {% else %}
+                                                        <a href="{% url 'staff_booking_input' s.training_id s.training_no s.booking_id 0 today.year today.month today.day h m %}">{{ s.name }}</a>
+                                                    {% endif %}
+                                                </td>
+
+                                                {# 空き枠（名前なし） #}
+                                            {% else %}
+                                                <td class="text-primary {% if s.minute_now_flg %}border-left-thick{% elif s.hour_flg %}border-left-thick-hour{% endif %}">
+                                                    {% if s.ex_flg %}
+                                                        <a href="{% url 'staff_exbooking_input' s.training_id today.year today.month today.day h m %}">
+                                                            <i class="bi bi-dash"></i>
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="{% url 'staff_booking_input_search' s.training_id s.training_no today.year today.month today.day h m %}">
+                                                            <i class="bi bi-dash"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </td>
+                                            {% endif %}
+
+                                        {% elif s.skip_flg == 2 and not s.name %}
+                                            <td class="text-primary {% if s.minute_now_flg %}border-left-thick{% elif s.hour_flg %}border-left-thick-hour{% endif %}">
+                                                <i class="bi bi-x-lg"></i>
+                                            </td>
+
+                                        {% elif not s.name and s.blackgray %}
+                                            <td class="text-secondary {% if s.minute_now_flg %}border-left-thick{% elif s.hour_flg %}border-left-thick-hour{% endif %}">
+                                                <i class="peak__block bi {% if s.blackgray == 'B' %}bi-x-square-fill{% else %}bi-x-square{% endif %}"></i>
+                                            </td>
                                         {% endif %}
-                                    {% elif schedules_minute.skip_flg == 2 and schedules_minute.name == '' %}
-                                        <td class="text-primary {% if schedules_minute.minute_now_flg == 1 %}border-left-thick{% endif %}" ><i class="bi bi-x-lg"></i></td>
-                                    {% endif %}
-                               　{% endfor %}
+
+                                    {% endwith %}
+                                {% endfor %}
                             {% endfor %}
+
                         </tr>
                     {% endfor %}
                 {% endfor %}

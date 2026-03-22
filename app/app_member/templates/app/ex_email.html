@@ -5,30 +5,44 @@
 {% load bootstrap4 %}
 {% block content %}
 
+<script src="https://www.google.com/recaptcha/api.js?render={{ RECAPTCHA_SITE_KEY }}"></script>
+<script>
+    grecaptcha.ready(function() {
+        grecaptcha.execute('{{ RECAPTCHA_SITE_KEY }}', {action: 'submit'}).then(function(token) {
+            const tokenInput = document.getElementById('id_recaptcha_token');
+            if (tokenInput) {
+                tokenInput.value = token;
+            }
+        });
+    });
+</script>
+
 
 <div class="row justify-content-center">
     <h2>認証用メールアドレス入力</h2>
-    <div class="col-lg-8 col-mid-5 col-sm-5">
+    <div class="col-lg-5 col-mid-5 col-sm-5">
         <form action="" method="POST">
         <div class="card md-10 shadow-sm mx-auto">
-            <div class="col-lg-8 mx-auto">
-                <table class="mx-auto">
-                <tr>
-                    <td class="data">
-                        {% render_field form.email class="form-control" placeholder="メールアドレスを入力してください" %}
-                    </td>
-                </tr>
-                </table>
-            </div>
+
+            <table class="table-bordered bg-light text-md-center">
+            <tbody>
+            <tr>
+                <td >
+                    {% render_field form.email class="form-control_peak_exmail" placeholder="メールアドレスを入力してください" %}
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <input type="hidden" id="id_recaptcha_token" name="recaptcha_token">
+                    <input class="btn btn-primary" type="submit" name="send_mail_btn" id="id_send_email" value="送信する">
+                </td>
+            </tr>
+            </tbody>
+            </table>
+
         </div>
-        <div class="p-4 text-center mx-auto">
-            <tabele class="profile_table mb-4">
-                <tbody>
-                <tr><td><a class="btn" href="/">トップに戻る</a></td>
-                    <td><input class="btn btn-primary" type="submit" name="send_mail_btn" id="id_send_email" value="送信する"></td>
-                </tr>
-                </tbody>
-            </tabele>
+        <div class="mt-3 md-10 mx-auto text-md-center">
+            <a class="btn btn-warning" href="/">トップに戻る</a>
         </div>
         {% csrf_token %}
         </form>

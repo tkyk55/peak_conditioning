@@ -80,6 +80,7 @@
                 <td class="data">
                     {{ form.email.value }}
                     <input type="hidden" name="email" id="input_email" value="{{ form.email.value }}">
+                    <input type="hidden" name="email_ch" id="input_email_ch" value="{{ form.email_ch.value }}">
                 </td>
             </tr>
 
@@ -94,14 +95,19 @@
             <tr>
                 <th class="header">目的</th>
                 <td class="data">
-                        {% for value in form.objective.value %}
-                            {% for choice_value, label in form.objective.field.choices %}
-                                {% if value == choice_value %}
-                                    <span>{{ label }}</span>
-                                {% endif %}
-                            {% endfor %}
+                    {# 表示（選択ラベルを出す） #}
+                    {% with selected=form.objective.value %}
+                        {% for val, label in form.objective.field.choices %}
+                            {% if val|stringformat:"s" in selected %}
+                                <span>{{ label }}</span>
+                            {% endif %}
                         {% endfor %}
-                    <input type="hidden" name="objective" id="input_objective" value="{{ form.objective.value }}">
+                    {% endwith %}
+
+                    {# 送信用（同名 hidden を複数出力） #}
+                    {% for v in form.objective.value %}
+                        <input type="hidden" name="objective" value="{{ v }}">
+                    {% endfor %}
                 </td>
             </tr>
 

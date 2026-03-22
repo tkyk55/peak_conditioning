@@ -1,0 +1,99 @@
+{% load widget_tweaks %}
+
+<!-- app/staff_closing_modal_form.html -->
+<div class="row justify-content-center text-center">
+    <div class="col-11 col-lg-10">
+    {% if closing_exist_data.0.closing_type %}
+        <form id="closingForm" method="POST" action="{% url 'staff_closing_modal' closing_exist_data.0.closing_type closing_exist_data.0.id today.year today.month today.day hour minute %}?partial=1">
+    {% else %}
+        <form id="closingForm" method="POST" action="{% url 'staff_closing_modal' click_training_id today.year today.month today.day hour minute %}?partial=1">
+    {% endif %}
+            <table class="shadow-sm table table-bordered bg-light">
+                <thead class="thead-light">
+                {% if err_cd == 99 %}
+                    <tr>
+                        <td colspan="2" class="text-danger">
+                            <div class="alert alert-warning">{{ err_msg }}</div>
+                            <div>ブロックを登録できませんでした。</div>
+                        </td>
+                    </tr>
+                {% elif err_cd == 98 %}
+                    <tr>
+                        <td colspan="2" class="text-danger">
+                            <div class="alert alert-danger">{{ err_msg }}</div>
+                            <div>ブロックを登録できませんでした。</div>
+                        </td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>トレーニング</th>
+                    <td class="data">
+                        {% for training_name, training_schedules in training.items %}
+                            {% if training_name.id == closing_exist_data.training.id or training_name.id == click_training_id %}
+                                {{ training_name }}  <!-- 一致した名前だけ表示 -->
+                            {% endif %}
+                        {% endfor %}
+                        <!-- 保存用の hidden input -->
+                        <input type="hidden" name="training_id" value="{{ closing_exist_data.training.id|default:click_training_id }}">
+                    </td>
+                </tr>
+                <tr><th>開始時間</th>
+                    {% if closing_exist_data %}
+                        <td class="data">{{ form.start.value }}</td>
+                    {% else %}
+                        <td class="data">{% render_field form.start class="form-control_staff_booking" %}</td>
+                    {% endif %}
+                </tr>
+                <tr><th>終了時間</th>
+                    {% if closing_exist_data %}
+                        <td class="data">{{ form.end.value }}</td>
+                    {% else %}
+                        <td class="data">{% render_field form.end class="form-control_staff_booking" %}</td>
+                    {% endif %}
+                </tr>
+                <tr class="peak__row">
+                    <th class="header">ブロック選択</th>
+                    <td class="data">
+                        {% if closing_exist_data %}
+                            {# --- すでに登録済み（固定表示） --- #}
+                            {% if closing_exist_data.0.closing_type == "B" %}
+                                黒ブロック
+                            {% elif closing_exist_data.0.closing_type == "G" %}
+                                灰ブロック
+                            {% endif %}
+                            <input type="hidden" name="closing_type" value="{{ closing_exist_data.0.closing_type }}">
+                        {% else %}
+                            {# --- 新規登録（セレクトボックス） --- #}
+                            <select class="form-control_staff" id="block" name="closing_type">
+                                <option value="B" {% if closing_exist_data.0.closing_type == "B" %}selected{% endif %}>黒ブロック</option>
+                                <option value="G" {% if closing_exist_data.0.closing_type == "G" %}selected{% endif %}>灰ブロック</option>
+                            </select>
+                        {% endif %}
+                    </td>
+                </tr>
+                </thead>
+            </table>
+
+            <div class="button mx-auto">
+                {% if overlap_error %}
+                    {# 重複エラー時：削除ボタン非表示 #}
+                {% elif closing_exist_data %}
+                    {# 既存ブロックあり（削除可能） #}
+                    <button class="btn btn-warning" type="submit" name="closeDel" value="{{ closing_exist_data.0.id }}" onclick="return delCheck()">削除</button>
+                {% else %}
+                    {# 新規登録モード #}
+                    <input class="btn btn-primary" type="submit" name="submit" value="新規登録" onclick="return daytimeInputCheck()">
+                {% endif %}
+                <input type="hidden" name="user_pk" value="{{ select_user.id }}">
+                <input type="hidden" name="target_date" value="{{ target_date }}">
+            </div>
+
+            <div class="button mx-auto mt-3 mb-3">
+                <a class="btn btn-outline-secondary" href="{% url 'staff_closing_day' today.year today.month today.day %}">戻る</a>
+            </div>
+            <input type="hidden" name="partial" value="1">
+            {% csrf_token %}
+        </form>
+        <div id="modalMessage" class="text-danger mt-2"></div>
+    </div>
+</div>

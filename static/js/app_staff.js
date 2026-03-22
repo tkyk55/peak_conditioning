@@ -38,7 +38,54 @@ function daytimeInputCheck() {
         return false;
     }
 
-    return true;
+    const $form  = $('#closingForm');
+    const url    = $form.attr('action');            // staff_closing_modal ... ?partial=1 を推奨
+    const data   = $form.serialize();               // csrf含む
+    const $modal = $('#modalContainer');
+    const $body  = $modal.find('.modal-body');
+
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: data,
+        // dataType は指定しない（成功=JSON / エラー=HTML の両対応にするため）
+        success: function (resp, status, xhr) {
+            const ct = (xhr.getResponseHeader('Content-Type') || '').toLowerCase();
+            console.log(resp)
+            console.log(status)
+            console.log(xhr)
+            if (ct.includes('application/json')) {
+                // === 成功（JSON想定） ===
+                // 例: {"ok": true}
+
+                try {
+                    const json = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+                    if (json.ok) {
+                        console.log('bbb')
+                        $modal.modal('hide');
+                        // 一覧などを最新状態に
+                        location.reload();
+                        return;
+                    }
+                } catch (e) { /* JSONパース失敗は下のHTML扱いへフォールバック */ }
+            }
+
+            // === 失敗（HTMLで部分テンプレ返却） ===
+            // モーダル内を置き換えて、開いたままエラーを表示
+            $body.html(resp);
+        },
+        error: function (xhr) {
+            // サーバ側で400などにしている場合もここに来る
+            const ct = (xhr.getResponseHeader('Content-Type') || '').toLowerCase();
+            if (ct.includes('text/html')) {
+                $body.html(xhr.responseText);  // 部分HTML（エラー表示）をそのまま差し替え
+            } else {
+                $body.html('<div class="alert alert-danger">通信エラーが発生しました</div>');
+            }
+        }
+    });
+
+    return false; // 通常submitはさせない
 }
 
 function StaffBookingInputCheck() {
@@ -151,3 +198,29 @@ function StaffExBookingDelCheck() {
         return false;
     }
 }
+
+$(function() {
+    $(document).on('click', '.open-modal', function(e) {
+        e.preventDefault();
+
+        let url = $(this).attr('href');
+
+        const $modal = $('#modalContainer');
+        const $body = $modal.find('.modal-body');
+
+        $body.html('<div class="text-center p-3 text-muted">読み込み中...</div>');
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            success: function(data) {
+                $body.html(data);
+                $modal.modal('show');
+            },
+            error: function(xhr, status, error) {
+                $body.html('<div class="text-danger p-3">読み込みエラー: ' + error + '</div>');
+                $modal.modal('show');
+            }
+        });
+    });
+});

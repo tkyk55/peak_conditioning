@@ -86,9 +86,9 @@
             </tr>
 
             <tr>
-                <th class="header">Mail確認<span class="text-danger">*</span></th>
+                <th class="header">Email確認<span class="text-danger">*</span></th>
                 <td class="data form_wrap form_wrap__2col" colspan="2">
-                    {% render_field form.email_ch class="form-control" placeholder="Mail確認" %}
+                    {% render_field form.email_ch class="form-control" placeholder="Emailをもう一度入力してください" %}
                 </td>
             </tr>
 
@@ -102,17 +102,20 @@
             <tr>
                 <th class="header">目的</th>
                 <td class="data" colspan="2">
-                    {% for value, label in form.objective.field.choices %}
-                        <div class="form-check form-check-inline">
-                            {% if value in objective %}
-                                <input type="checkbox" id="objective_{{ forloop.counter }}" name="objective" value="{{ value }}" checked>
-                            {% else %}
-                                <input type="checkbox" id="objective_{{ forloop.counter }}" name="objective" value="{{ value }}">
-                            {% endif %}
-                            <label for="objective_{{ forloop.counter }}">{{ label }}</label>
-                        </div>
-                    {% endfor %}
-                  </td>
+                    {% with selected=form.objective.value %}
+                        {% for value, label in form.objective.field.choices %}
+                            <div class="form-check form-check-inline">
+                                <input
+                                        type="checkbox"
+                                        id="objective_{{ forloop.counter }}"
+                                        name="objective"
+                                        value="{{ value }}"
+                                        {% if value|stringformat:"s" in selected %}checked{% endif %}>
+                                <label for="objective_{{ forloop.counter }}">{{ label }}</label>
+                            </div>
+                        {% endfor %}
+                    {% endwith %}
+                </td>
             </tr>
 
             <tr>

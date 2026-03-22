@@ -7,16 +7,21 @@
 
 
 <div class="row justify-content-center">
-    <h2>有効期限が終了しました</h2>
-
+    <h2>認証メールの有効期限が終了しました</h2>
     <div class="col-lg-8 col-mid-5 col-sm-5">
- 　　　　　<p>有効期限が終了しました</p>
         <form method="post">
-            {% csrf_token %}
-            <p>認証メールを再送信されたい方は「再送フォームへ」を押してください<input class="btn btn-primary" type="submit" name="resend" id="ex_booking_resend" value="再送フォームへ" onClick="return exemailResendConf()"></p>
-            <input type="hidden" name="email" id="ex_booking_resend_email" value="{{ email }}">
+            <table class="shadow-sm table table-bordered bg-light">
+                <tbody>
+        　　　　　<tr><td class="px-3 py-3" colspan="2"><p>認証メールの有効期限が終了しました</p>
+                <tr><td class="px-3 py-3"><p>認証メールを再送信されたい方は「再送フォームへ」を押してください</p></td><td class="px-3 py-3"><input class="btn btn-primary" type="submit" name="resend" id="ex_booking_resend" value="再送フォームへ" onClick="return exemailResendConf()"></td></tr>
+                <input type="hidden" name="email" id="ex_booking_resend_email" value="{{ email }}">
+                {% csrf_token %}
+                </tbody>
+            </table>
+        <div class="mt-3 md-10 mx-auto text-md-center">
+        <p><a class="btn btn-warning" href="/">トップに戻る</a></p>
+        </div>
         </form>
-        <p><a class="btn btn-primary" href="/">トップに戻る</a></p>
     </div>
 </div>
 

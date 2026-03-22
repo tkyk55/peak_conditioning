@@ -5,30 +5,41 @@
 
 {% block content %}
 
-<div class="text-center my-5">
+<div class="text-center">
     <div class="row">
-
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                {% for crumb in breadcrumbs %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ crumb.url }}">{{ crumb.name }}</a>
+                    </li>
+                {% endfor %}
+            </ol>
+        </nav>
         <div class="mb-3">
             <h1>
                 {{ training_data.0 }}<br />予約カレンダー
             </h1>
         </div>
 
-
         <div class="col-md-6 mb-4 text-center calendar">
             <img src="{{ training_data.0.image.url }}" class="img-fluid" alt="" />
-
         </div>
 
-        <div class="col-md-6 mb-5">
+        <div class="col-md-6 mb-5 pr-md-5">
             <div class="card">
                 <div class="card-body px-2 py-1">
                     <div class="p-4 text-left">
-                        <p>内容：{{ training_data.0.description }}</p>
+                        <h5 class="mb-3 card-title border-bottom pb-2 mb-3">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>説明
+                        </h5>
+                        <p>{{ training_data.0.description }}</p>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 
     <div class="mb-3">
@@ -36,12 +47,16 @@
     </div>
 
     <div class="col-mid-10 col-sm-12">
-        <div class="d-flex mb-2">
-            <div class="mx-3 mr-auto">
-                <a class="btn btn-warning" href="{% url 'calendar' training_data.0.pk before.year before.month before.day %}">前週</a>
+        <div class="d-flex mb-2 justify-content-between">
+            <div class="mx-3">
+                {% if today_flg != '1' %}
+                    <a class="btn btn-warning" href="{% url 'calendar' training_data.0.pk before.year before.month before.day %}">前週</a>
+                {% endif %}
             </div>
             <div class="mx-3">
-                <a class="btn btn-warning" href="{% url 'calendar' training_data.0.pk next.year next.month next.day %}">次週</a>
+                {% if one_month_flg != '1' %}
+                    <a class="btn btn-warning" href="{% url 'calendar' training_data.0.pk next.year next.month next.day %}">次週</a>
+                {% endif %}
             </div>
         </div>
         <div class="">
@@ -70,7 +85,7 @@
                             {% elif book == 0 %}
                                <a href="{% url 'booking' training_data.0.pk datetime.year datetime.month datetime.day hour minute %}"><i class="bi bi-circle"></i></a>
                             {% elif book == 1 %}
-                               <i class="bi bi-x-lg">予約済み</i>
+                                予約済み
                             {% elif book == 2 %}
                                <i class="bi bi-x-lg">2</i>
                             {% elif book == 5 %}

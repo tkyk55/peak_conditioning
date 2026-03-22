@@ -5,10 +5,18 @@
 {% load bootstrap4 %}
 {% block content %}
 
-<div class="text-center my-5">
-    <h1 class="mb-5">ご予約をキャンセルいたしました。</h1>
-    <p class="mb-4">またのご予約をスタッフ一同心よりお待ちしております。</p>
-    <a class="btn btn-primary" href="/">ホームに戻る</a>
+<div class="row justify-content-center">
+    <h2 class="mb-5">ご予約をキャンセルいたしました</h2>
+    <div class="col-lg-8 col-mid-5 col-sm-5">
+    <table class="shadow-sm table table-bordered bg-light">
+        <tbody>
+        <tr><td><p class="mb-4">ご予約をキャンセルいたしました</p><p>またのご予約をスタッフ一同心よりお待ちしております。</p></td></tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="mt-3 md-10 mx-auto text-md-center">
+    <a class="btn btn-warning" href="/">ホームに戻る</a>
+    </div>
 </div>
 
 {% endblock %}

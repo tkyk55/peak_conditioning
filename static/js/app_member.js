@@ -44,7 +44,18 @@ function exBookingCheck() {
 
     const id_email = $("#id_email").val().trim(); // 入力値を取得し、空白を削除
     if (id_email === "") {
-        alert("Emailを入力してください。");
+        alert("Emailを入力してください");
+        return false; // 送信を中止
+    }
+
+    const id_email_ch = $("#id_email_ch").val().trim(); // 入力値を取得し、空白を削除
+    if (id_email_ch === "") {
+        alert("Email確認を入力してください");
+        return false; // 送信を中止
+    }
+
+    if (id_email_ch !== id_email) {
+        alert("EmailがEmail確認と一致しません");
         return false; // 送信を中止
     }
 

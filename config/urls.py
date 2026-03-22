@@ -57,9 +57,20 @@ urlpatterns = [
     path('staff/closing_day', app_staff_views.StaffClosingDayView.as_view(), name='staff_closing_day'),
     path('staff/closing_day/<int:year>/<int:month>/<int:day>/', app_staff_views.StaffClosingDayView.as_view(), name='staff_closing_day'),
     path('staff/closing_day/<str:closing>/<int:year>/<int:month>/<int:day>/', app_staff_views.StaffClosingDayView.as_view(), name='staff_closing_day'),
-    path('staff/closing_day/<int:err_cd>/<str:blackgray>/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/', app_staff_views.StaffClosingDayView.as_view(), name='staff_closing_day'),
+    path('staff/closing_day/<int:err_cd>/<str:blackgray>/<int:year>/<int:month>/<int:day>/', app_staff_views.StaffClosingDayView.as_view(), name='staff_closing_day'),
     path('staff/closing_day/<str:blackgray>/<int:training_id>/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/', app_staff_views.StaffClosingDayView.as_view(), name='staff_closing_day'),
-    path('staff/closing_day/<str:closing>/<int:closing_id>/<int:year>/<int:month>/<int:day>/', app_staff_views.StaffClosingDayView.as_view(), name='staff_closing_day'),
+    path('staff/closing_day/<str:closing>/<int:closing_id>/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/', app_staff_views.StaffClosingDayView.as_view(), name='staff_closing_day'),
+    # モーダル用（部分テンプレ返す）
+    path(
+        "staff/closing_day_modal/<int:training_id>/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/",
+        app_staff_views.StaffClosingModalView.as_view(),
+        name="staff_closing_modal",
+    ),
+    path(
+        "staff/closing_day_modal/<str:blackgray>/<int:closing_id>/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/",
+        app_staff_views.StaffClosingModalView.as_view(),
+        name="staff_closing_modal",
+    ),
     path('staff/personal', app_staff_views.StaffPersonalView.as_view(), name='staff_personal'),
     path('staff/semipersonal', app_staff_views.StaffSemiPersonalView.as_view(), name='staff_semi_personal'),
     path('staff/ex_reserve', app_staff_views.StaffExReserveView.as_view(), name='staff_ex_reserve'),

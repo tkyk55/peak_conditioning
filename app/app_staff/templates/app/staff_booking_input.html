@@ -68,7 +68,7 @@
         <form action="" method="POST">
             <table class="shadow-sm table table-bordered bg-light">
                 <thead class="thead-light">
-                {% if err_msg %}<tr>{{ err_msg }}</tr>{% endif %}
+                {% if err_cd %}<tr>{{ err_msg }}</tr>{% endif %}
                 <tr class="d-none">{% render_field form.booking_id class="d-none" %}</tr>
 
                 {% if select_user %}

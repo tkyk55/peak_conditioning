@@ -5,18 +5,38 @@
 {% load bootstrap4 %}
 {% block content %}
 
+<script src="https://www.google.com/recaptcha/api.js?render={{ RECAPTCHA_SITE_KEY }}"></script>
+<script>
+    grecaptcha.ready(function() {
+        grecaptcha.execute('{{ RECAPTCHA_SITE_KEY }}', {action: 'submit'}).then(function(token) {
+            const tokenInput = document.getElementById('id_recaptcha_token');
+            if (tokenInput) {
+                tokenInput.value = token;
+            }
+        });
+    });
+</script>
 
 <div class="row justify-content-center">
-    <h2>まだURL認証されていません</h2>
-    <div class="col-lg-8 col-mid-5 col-sm-5">
- 　　　　　<p>まだURL認証されていません。お送りしたメールから認証URLをクリックしてください。</p>
-         <form method="post">
-  　         {% csrf_token %}
-             <p>認証メールを再送信されたい方は「再送フォームへ」を押してください<input class="btn btn-primary" type="submit" name="resend" id="ex_booking_resend" value="再送フォームへ" onClick="return exemailResendConf()"></p>
-             <input type="hidden" name="email" id="ex_booking_resend_email" value="{{ email }}">
-         </form>
-        <p><a class="btn btn-primary" href="/">トップに戻る</a></p>
+    <h2>入力されたメールアドレスは、認証メールが送付されています</h2>
+    <div class="col-lg-5 col-mid-5 col-sm-5">
+        <form method="post">
+        <div class="md-10 shadow-sm mx-auto">
+            <table class="table-bordered bg-light text-md-center">
+                <tbody>
+            　　　　　<tr><td class="px-3 py-3" colspan="2"><p>ご入力されたメールアドレス宛にすでに認証メールを送信しています</p><p>メール内のリンクをクリックして、認証を完了してください。</p><p class="note">※ 認証リンクの有効期限は１時間です。</p></td></tr>
+                    <tr><td class="px-3 py-3"><p>認証メールを再送信されたい方は左記の「再送フォームへ」を押してください</p></td><td class="px-3 py-3"><input class="btn btn-primary" type="submit" name="resend" id="ex_booking_resend" value="再送フォームへ" onClick="return exemailResendConf()"></td></tr>
+                    <input type="hidden" name="email" id="ex_booking_resend_email" value="{{ email }}">
+        　         {% csrf_token %}
+                <tbody>
+            </table>
+        </div>
+    <div class="mt-3 md-10 mx-auto text-md-center">
+      <p><a class="btn btn-warning" href="/">トップに戻る</a></p>
     </div>
+    </form>
+    </div>
+
 </div>
 
 {% endblock %}

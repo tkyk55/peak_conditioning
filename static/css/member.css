@@ -8,7 +8,7 @@ body {
 }
 
 h2 {
-    margin-bottom:30px;
+    margin:1rem;
     text-align:center;
 }
 
@@ -94,6 +94,14 @@ h2 {
     display: inline;
     width: 50%;
 }
+
+#id_email.form-control_peak_exmail{
+    display: inline;
+    width: 80%;
+    margin:0.3rem auto;
+    padding:0.3rem;
+}
+
 
 .calendar img {
     height: 150px;

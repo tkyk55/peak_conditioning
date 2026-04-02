@@ -750,8 +750,8 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
 
                         # 選んだ時間に予約を変更する
                         booking = booking_old_data
-                        booking.training_no = form.cleaned_data['training_no']
-                        booking.start = form.cleaned_data['start']
+                        booking.training_no = form.cleaned_data['training_no'] - 1
+                        booking.start = start_time
                         booking.end = start_end_time
                         booking.save()
 
@@ -773,9 +773,11 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
                             email_templates_id = 5 # 【Peak Conditions】トレーニングのご予約に変更があります
                             send_email__function(booking_old_data.user.email, context, email_templates_id)
 
-               return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, year, month, day, hour, minute)
+               #return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, year, month, day, hour, minute)
+               return redirect('staff_calendar', year, month, day)
 
             elif booking_exist_data:
+                ic('cc')
                 err_cd = 50  # 選択した時間帯には既に予約があるため、登録できません
                 return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, user_pk, err_cd, year, month, day, hour, minute)
             else:

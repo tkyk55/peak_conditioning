@@ -1,55 +1,79 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
 {% load bootstrap4 %}
+{% block title %}マイページ{% endblock %}
+{% block content %}
 
-<div class="row justify-content-center card card-profile my-5 mx-auto">
-    <div class="card-body col-mid-10 col-sm-12">
-        <h5 class="card-title text-center">マイページ（予約確認）</h5>
-        <table class="profile_table mb-4">
-            <tbody>
-            <tr>
-                <th class="header">おしらせ</th>
-                <td class="data">{{ notification.0.notice }}</td>
-            </tr>
-            <tr>
-                <th class="header">契約内容</th>
-                <td class="data">{{ user_data.0.num_contracts }} 回／月{{ user_date_dif }}ヶ月</td>
-            </tr>
-            <tr>
-                <th class="header">契約期間</th>
-                <td class="data">{{ user_data.0.stat_date }} から {{ user_data.0.end_date }}</td>
-            </tr>
-            <tr>
-                <th class="header">口座引落金額</th>
-                <td class="data">{{ user_data.0.amount_money }} 円</td>
-            </tr>
-            <tr>
-                <th class="header">予約残回数</th>
-                <td class="data">{{ user_data.0.num_times }}　回</td>
-            </tr>
-
-            <tr>
-                <th class="header">予約済みトレーニング<br>
-                    {% if booking_data %}
-                      <a class="btn btn-lg btn-warning btn-block" href="{% url 'cancel' %}">予約を取り消す</a></th>
-                    {% endif %}
-                <td class="data">
-                {% for training_category in training_category %}
-                    {%for booking_data in booking_data %}
-                      {% if training_category.training == booking_data.training.id %}
-                     　　<p>{{ booking_data.training }} {{ booking_data.start }}</p>
-                      {% endif %}
-                    {% endfor %}
-                {% empty %}
-                　　<p>まだトレーニングがありません</p>
+    <div class="text-center mb-4 container mt-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent p-0 m-0">
+                <li class="breadcrumb-item"><a href="/menu">Home</a></li>
+                {% for crumb in breadcrumbs %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ crumb.url }}">{{ crumb.name }}</a>
+                    </li>
                 {% endfor %}
-                </td>
-            </tr>
-            </tbody>
-        </table>
-        <div class="button mx-auto">
+            </ol>
+        </nav>
+    </div>
 
+    <div class="container mb-5">
+
+        <div class="card shadow-sm border-0 mx-auto" style="max-width: 800px;">
+
+            <div class="card-header text-white text-center py-3 border-0" style="background-color: #0d6efd; border-radius: 0.25rem 0.25rem 0 0;">
+                <h1 class="h4 mb-0 font-weight-bold">マイページ</h1>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+
+                <div class="mb-5 border-bottom pb-4">
+                    <h5 class="font-weight-bold pb-2 mb-3" style="color: #0d6efd; border-bottom: 3px solid #0d6efd;">契約情報</h5>
+                    <dl class="row mb-0" style="font-size: 1.05rem;">
+                        <dt class="col-sm-4 text-muted py-2 border-bottom">契約内容</dt>
+                        <dd class="col-sm-8 py-2 border-bottom mb-0">{{ user_data.0.num_contracts }} 回／月</dd>
+
+                        <dt class="col-sm-4 text-muted py-2 border-bottom">契約期間</dt>
+                        <dd class="col-sm-8 py-2 border-bottom mb-0">{{ user_data.0.stat_date }} ～ {{ user_data.0.end_date }}</dd>
+
+                        <dt class="col-sm-4 text-muted py-2 border-bottom">口座引落金額</dt>
+                        <dd class="col-sm-8 py-2 border-bottom mb-0">{{ user_data.0.amount_money }} 円</dd>
+
+                        <dt class="col-sm-4 text-muted py-2">予約残回数</dt>
+                        <dd class="col-sm-8 py-2 mb-0 font-weight-bold text-danger">{{ user_data.0.num_times }} 回</dd>
+                    </dl>
+                </div>
+                <div class="mb-5 border-bottom pb-4">
+                    <h5 class="font-weight-bold pb-2 mb-3" style="color: #0d6efd; border-bottom: 3px solid #0d6efd;">おしらせ</h5>
+                    <div class="p-3 rounded" style="background-color: #eef5ff; border: 1px solid #cce0ff;">
+                        {% if notification.0.notice %}
+                            <span style="color: #004085;">{{ notification.0.notice|linebreaksbr }}</span>
+                        {% else %}
+                            <span class="text-muted">現在、お知らせはありません。</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2" style="border-bottom: 3px solid #0d6efd;">
+                        <h5 class="font-weight-bold m-0" style="color: #0d6efd;">予約済みトレーニング</h5>
+                        {% if booking_data %}
+                            <a class="btn text-white px-4 mt-2 mt-md-0" href="{% url 'cancel' %}" style="background-color: #ff8c00; border-radius: 20px;">予約を取り消す</a>
+                        {% endif %}
+                    </div>
+
+                    {% if booking_data %}
+                        <ul class="list-group list-group-flush">
+                            {% for booking in booking_data %}
+                                <li class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center border-bottom">
+                                    <span style="font-size: 1.05rem;">{{ booking.training }}</span>
+                                    <span class="text-secondary" style="font-size: 1.05rem;">{{ booking.start|date:"n/j (D) G:i" }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted text-center py-4">現在、予約済みのトレーニングはありません。</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
-</div>
-
 {% endblock %}

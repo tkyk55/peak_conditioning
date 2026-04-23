@@ -60,32 +60,6 @@ class ProfileEditView(View):
             'form': form
         })
 
-class MenuView(LoginRequiredMixin, TemplateView):
-    def get(self, request, *args, **kwargs):
-        user_data = CustomUser.objects.filter(id=request.user.id)
-        user_is_staff = user_data.values('is_staff')[0]['is_staff']  # 予約残数
-
-        if user_is_staff:
-             start_date = date.today()
-             weekday = start_date.weekday()
-             # カレンダー日曜日開始
-             # if weekday != 6:
-             #     start_date = start_date - timedelta(days=weekday + 1)
-             return redirect('staff_calendar', start_date.year, start_date.month, start_date.day)
-
-
-        return render(request, 'accounts/menu.html', {
-        })
-
-
-class ReserveView(LoginRequiredMixin, TemplateView):
-    def get(self, request, *args, **kwargs):
-        Training_data = Training.objects.filter(experience_flg=0)
-
-        return render(request, 'accounts/reserve.html', {
-            'training_data': Training_data,
-        })
-
 class NippoView(TemplateView):
     def get(self, request, *args, **kwargs):
 

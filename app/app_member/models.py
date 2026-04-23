@@ -19,7 +19,7 @@ class Booking(models.Model):
     def __str__(self):
         start = timezone.localtime(self.start).strftime('%Y/%m/%d %H:%M')
         end = timezone.localtime(self.end).strftime('%Y/%m/%d %H:%M')
-        return f'{self.id} {self.user} {start} ~ {end} {self.training} {self.training_no}'
+        return f'{self.id} {self.user} {start} ~ {end} {self.training} {self.training_no} {self.del_flg}'
 
 def generate_random_string(length=10):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -84,6 +84,7 @@ class Master(models.Model):
     #category = models.CharField('カテゴリ', max_length=30)
     #set_value = models.CharField('設定値', max_length=30)
     from_email = models.EmailField('送信元メールアドレス', default='default@example.com')
+    bcc_email = models.EmailField('bccメールアドレス', default='bcc@example.com')
     site_url = models.URLField(max_length=200, verbose_name='サイトURL', blank=True, null=True)  # URLフィールドを追加
     shop_tel1 = models.CharField(max_length=15, verbose_name='お店電話番号1', null=True)
 

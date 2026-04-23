@@ -24,6 +24,23 @@ function editCheck() {
     }
 }
 
+function staffDaytimeInputCheck() {
+    let startTime = $('#id_start option:selected').val();
+    let endTime = $('#id_end option:selected').val();
+
+    // 時間を Date オブジェクトに変換
+    let startDate = new Date('1970-01-01T' + startTime + ':00');
+    let endDate = new Date('1970-01-01T' + endTime + ':00');
+
+    // 時間を比較
+    if(startDate >= endDate) {
+        alert("開始時刻が終了時刻より大きい、または同じです。確認してください");
+        return false;
+    }
+
+    return true;
+}
+
 function daytimeInputCheck() {
     let startTime = $('#id_start option:selected').val();
     let endTime = $('#id_end option:selected').val();

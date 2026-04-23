@@ -98,8 +98,8 @@ class StaffCalendarView(LoginRequiredMixin, TemplateView):
 
         datetime_start = day_start_end['today_j']
         datetime_end = datetime_start + timedelta(hours=23)
-        ## staff_workデータベースアクセス
-        staff_work_data = StaffWork.objects.filter(start__gte=datetime_start, end__lte=datetime_end)
+        ## staff_work データを取得
+        staff_work_data = StaffWork.objects.filter(start__gte=datetime_start, end__lte=datetime_end, del_flg=0)
 
         for staff_calendar in calendar_data:
             for hour_calendar in calendar_data[staff_calendar]:
@@ -411,7 +411,7 @@ class StaffWorkInputView(LoginRequiredMixin, TemplateView):
         datetime_end = datetime_start_click + timedelta(hours=23)
 
         ## staff_workデータベースアクセス
-        staff_time_data = StaffWork.objects.filter(staff_id=self.kwargs['id'], start__gte=datetime_start_click, end__lte=datetime_end,).order_by('-id')
+        staff_time_data = StaffWork.objects.filter(staff_id=self.kwargs['id'], start__gte=datetime_start_click, end__lte=datetime_end, del_flg=0).order_by('-id')
 
         staff_time_data_id = None
 
@@ -475,7 +475,8 @@ class StaffWorkInputView(LoginRequiredMixin, TemplateView):
 
         if submit_type == '削除':
             staffwork = StaffWork.objects.get(id=int(staff_work_id[0]))
-            staffwork.delete()
+            staffwork.del_flg = 1
+            staffwork.save()
             return redirect('staff_calendar', year, month, day)
 
         if form.is_valid():
@@ -529,10 +530,12 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
         day = self.kwargs.get('day')
         hour = self.kwargs.get('hour')
         minute = self.kwargs.get('minute')
-        user_id = self.kwargs.get('user_id')
+        #user_id = self.kwargs.get('user_id')
         user_data = None
-        if user_id:
-            user_data = CustomUser.objects.get(id=int(user_id))
+        if request.session.get('user_pk'):
+            user_pk = int(request.session.get('user_pk')[0])
+            user_data = CustomUser.objects.get(id=int(user_pk))
+
         if year:
             today = date(year=year, month=month, day=day)
         else:
@@ -643,6 +646,10 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
         user_pk = None
         if request.session.get('user_pk'):
             user_pk = int(request.session.get('user_pk')[0])
+        user_data = None
+        if user_pk:
+            user_data = CustomUser.objects.get(id=int(user_pk))
+
         submit_type = request.POST.getlist('submit')[0]
         action_type = request.POST.get('action_type')
 
@@ -727,12 +734,38 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
             closing_exist_data = find_closing_exist_days__function('B', start_time, start_end_time, my_training_id, None)
             if closing_exist_data and closing_exist_data[0].closing_type == 'B':
                 err_cd = 10  # 選択した時間帯には黒ブロックが設定されているため、登録できません
-                return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, user_pk, err_cd, year, month, day, hour, minute)
+                err_msg = err_setting_function(err_cd)
+                return render(request, 'app/staff_booking_input.html', {
+                    'year': year,
+                    'month': month,
+                    'day': day,
+                    'today': today,
+                    'timetable': timetable__function(day_start_end['today_j']),
+                    'training': training_detail,
+                    'training_data': training_data,
+                    'form': form,
+                    'select_user': user_data,
+                    'err_msg': err_msg,
+                    'err_cd': err_cd,
+                })
 
             if closing_exist_data and closing_exist_data[0].closing_type == 'G' and closing_exist_data[0].training_no == training_no \
                and closing_exist_data[0].start == form.cleaned_data['start'] and closing_exist_data[0].end == start_end_time:
                  err_cd = 20  # 選択した時間帯には灰ブロックが設定されているため、登録できません
-                 return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, user_pk, err_cd, year, month, day, hour, minute)
+                 err_msg = err_setting_function(err_cd)
+                 return render(request, 'app/staff_booking_input.html', {
+                     'year': year,
+                     'month': month,
+                     'day': day,
+                     'today': today,
+                     'timetable': timetable__function(day_start_end['today_j']),
+                     'training': training_detail,
+                     'training_data': training_data,
+                     'form': form,
+                     'select_user': user_data,
+                     'err_msg': err_msg,
+                     'err_cd': err_cd,
+                 })
 
             # 重複チェック
             if form.cleaned_data['booking_id']:
@@ -740,8 +773,27 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
             else:
                 booking_exist_data = Booking.objects.filter(start__gte=start_time_45before, start__lt=start_end_time, training=my_training_id, training_no=training_no, del_flg=0)
 
-            ## 予約があった場合の動き
-            if booking_exist_data and my_booking_id: # 選択した予約を動かしたい場合
+            ## 予約があった場合の動き1
+            if booking_exist_data:
+                if booking_exist_data.count() > 1: # 予約が１つ以上ある場合は動かせない
+                    err_cd = 50  # 選択した時間帯には既に予約があるため、登録できません
+                    err_msg = err_setting_function(err_cd)
+                    return render(request, 'app/staff_booking_input.html', {
+                        'year': year,
+                        'month': month,
+                        'day': day,
+                        'today': today,
+                        'timetable': timetable__function(day_start_end['today_j']),
+                        'training': training_detail,
+                        'training_data': training_data,
+                        'form': form,
+                        'select_user': user_data,
+                        'err_msg': err_msg,
+                        'err_cd': err_cd,
+                    })
+
+            ## 予約があった場合の動き2
+            if booking_exist_data and my_booking_id and booking_exist_data[0].id == my_booking_id: # 選択した予約でそれが自分自身の予約を動かしたい場合
                # 登録されている予約を削除する
                if form.is_valid():
                     if form.cleaned_data['booking_id']:
@@ -777,9 +829,21 @@ class StaffBookingInputView(LoginRequiredMixin, TemplateView):
                return redirect('staff_calendar', year, month, day)
 
             elif booking_exist_data:
-                ic('cc')
                 err_cd = 50  # 選択した時間帯には既に予約があるため、登録できません
-                return redirect('staff_booking_input', my_training_id, training_no, my_booking_id, user_pk, err_cd, year, month, day, hour, minute)
+                err_msg = err_setting_function(err_cd)
+                return render(request, 'app/staff_booking_input.html', {
+                    'year': year,
+                    'month': month,
+                    'day': day,
+                    'today': today,
+                    'timetable': timetable__function(day_start_end['today_j']),
+                    'training': training_detail,
+                    'training_data': training_data,
+                    'form': form,
+                    'select_user': user_data,
+                    'err_msg': err_msg,
+                    'err_cd': err_cd,
+                })
             else:
                 if form.cleaned_data['booking_id']:
                     booking = Booking()
@@ -903,7 +967,8 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
         days = days_today_setting_function(first_date, last_day, start_date)
         start_day = day_start_end['start_date_j']
         end_day = day_start_end['end_date_j']
-        closing_data_all = ClosingDay.objects.filter(start__gte=day_start_end['start_date_j'], start__lte=day_start_end['end_date_j'], closing_type='C')
+
+        closing_data_all = ClosingDay.objects.filter(start__gte=day_start_end['start_date_j'], start__lte=day_start_end['end_date_j'], closing_type='C', del_flg=0)
 
         # 日付データ加工
         days_data = {day: find_closing_day__function(day, closing_data_all) for day in days}
@@ -922,7 +987,7 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
             closing_data = ClosingDay.objects.filter(start=start_date, closing_type='C')
 
             if closing == 'off' and closing_data:
-                closing_data.delete()
+                ClosingDay.objects.filter(start=start_date, closing_type='C').update(del_flg=1)
                 return redirect('staff_closing_day', year, month, day)
             elif closing == 'on' and not closing_data:
                 closing_data = ClosingDay()
@@ -941,7 +1006,7 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
         training_detail = training_detail__function(training_data, start)
 
         # 休館日・ブロック取得
-        bg_data = ClosingDay.objects.filter(start__gte=start_day, start__lte=end_day)
+        bg_data = ClosingDay.objects.filter(start__gte=start_day, start__lte=end_day, del_flg=0)
 
         # トレーニング側に休日埋め込み
         training_detail = training_detail_make__function(training_detail, None, today, bg_data)
@@ -1001,75 +1066,9 @@ class StaffClosingDayView(LoginRequiredMixin, TemplateView):
             'click_training_id': click_training_id,
         })
 
-    def post(self, request, *args, **kwargs):
-        form = StaffClosingInputForm(request.POST or None)
-        closing_type = request.POST.getlist('closing_type')[0]
-        training_id = request.POST.getlist('training_id')[0]  # <input type="hidden" name="training_id"のvalueを取得
-        #training_no = int(request.POST.getlist('training_no')[0]) - 1  # <input type="hidden" name="training_no"のvalueを取得
-        closing_id = request.POST.getlist('closing_id')
-        #today_str = (request.POST.getlist('target_date')[0])
-        # today = datetime.strptime(today_str, '%Y-%m-%d')
-        year = self.kwargs.get('year')
-        month = self.kwargs.get('month')
-        day = self.kwargs.get('day')
-        hour = self.kwargs.get('hour')
-        minute = self.kwargs.get('minute')
+    # モーダル（StaffClosingModalView）に処理を移行
+    # def post(self, request, *args, **kwargs):
 
-        if year:
-            today = date(year=year, month=month, day=day)
-        else:
-            today = date.today()
-
-        # 削除ボタンが押された場合
-        del_closing = request.POST.getlist('closeDel')
-        if del_closing:
-            closingday = ClosingDay.objects.filter(id=del_closing[0])
-            closingday.delete()
-            return redirect('staff_closing_day', year, month, day)
-
-        if form.is_valid():
-            # postデータを展開
-            start = form.cleaned_data['start'].split(":")
-            end = form.cleaned_data['end'].split(":")
-            start_time = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=int(start[0]), minute=int(start[1])))
-            end_time = make_aware(datetime(year=today.year, month=today.month, day=today.day, hour=int(end[0]), minute=int(end[1])))
-
-
-        # 休館日重複チェック
-            closing_exist_data = find_closing_exist_days__function(closing_type, start_time, end_time, training_id, None)
-
-            if closing_exist_data:
-                err_cd = 99
-                return redirect('staff_closing_day', err_cd, closing_type, today.year, today.month, today.day)
-            else:
-                if closing_id:
-                    closingday = ClosingDay.objects.filter(id=closing_id)
-                    closingday.delete()
-                    closingday = ClosingDay()
-                    closingday.closing_type = closing_type
-                    closingday.start = start_time
-                    closingday.end = end_time
-                    closingday.training_id = training_id
-                    #if closing_type == 'G':
-                    #    closingday.training_no = training_no
-                    closingday.save()
-                else:
-                    closingday = ClosingDay()
-                    closingday.closing_type = closing_type
-                    closingday.start = start_time
-                    closingday.end = end_time
-                    closingday.training_id = training_id
-                    #if closing_type == 'G':
-                    #    closingday.training_no = training_no
-                    closingday.save()
-        else:
-            #フォームが無効な場合の処理
-            for field, errors in form.errors.items():
-              # 各項目のエラーメッセージを取得
-              for error in errors:
-                print(f"{field}: {error}")
-
-        return redirect('staff_closing_day', today.year, today.month, today.day)
 
 class StaffClosingModalView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
@@ -1187,8 +1186,7 @@ class StaffClosingModalView(LoginRequiredMixin, TemplateView):
         # 削除ボタンが押された場合
         del_closing = request.POST.getlist('closeDel')
         if del_closing:
-            closingday = ClosingDay.objects.filter(id=del_closing[0])
-            closingday.delete()
+            ClosingDay.objects.filter(id=del_closing[0]).update(del_flg=1)
             return redirect('staff_closing_day', year, month, day)
 
         if form.is_valid():
@@ -1208,7 +1206,7 @@ class StaffClosingModalView(LoginRequiredMixin, TemplateView):
 
             if closing_exist_data:
                 err_cd = 99
-                err_msg = "この時間帯にすでにブロックが登録されています。"
+                err_msg = err_setting_function(err_cd)
                 # 失敗 → 部分テンプレ（モーダル内差し替え）
                 ctx = {
                     "form": form,
@@ -1228,7 +1226,7 @@ class StaffClosingModalView(LoginRequiredMixin, TemplateView):
             elif booking_exist_data.exists():
                 # --- 予約重複 ---
                 err_cd = 98
-                err_msg = "この時間帯にすでに予約が入っています。"
+                err_msg = err_setting_function(err_cd)
 
                 ctx = {
                     "form": form,
@@ -1244,10 +1242,9 @@ class StaffClosingModalView(LoginRequiredMixin, TemplateView):
                 }
                 return render(request, 'app/staff_closing_modal_form.html', ctx, status=400)
 
-            else:
+            else: # 存在しない経路（更新ボタンは設けていない）
                 if closing_id:
-                    closingday = ClosingDay.objects.filter(id=closing_id)
-                    closingday.delete()
+                    ClosingDay.objects.filter(id=closing_id).update(del_flg=1)
                     closingday = ClosingDay()
                     closingday.closing_type = closing_type
                     closingday.start = start_time
@@ -2039,6 +2036,10 @@ def err_setting_function(err_cd):
         err_msg = '選択した時間帯には灰ブロックが設定されているため、登録できません(code_20)'
     elif err_cd == 50:
         err_msg = '選択した時間帯には既に他の予約があるため、登録できません(code_50)'
+    elif err_cd == 98:
+        err_msg = "この時間帯にすでに予約が入っています。"
+    elif err_cd == 99:
+        err_msg = "この時間帯にすでにブロックが登録されています。"
 
     return err_msg
 

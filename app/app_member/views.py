@@ -22,6 +22,21 @@ from django.conf import settings
 class IndexView(TemplateView):
     template_name = 'app/index.html'
 
+class MenuView(LoginRequiredMixin, TemplateView):
+    def get(self, request, *args, **kwargs):
+        user_data = CustomUser.objects.filter(id=request.user.id)
+        user_is_staff = user_data.values('is_staff')[0]['is_staff']  # 予約残数
+
+        if user_is_staff:
+            start_date = date.today()
+            weekday = start_date.weekday()
+            # カレンダー日曜日開始
+            # if weekday != 6:
+            #     start_date = start_date - timedelta(days=weekday + 1)
+            return redirect('staff_calendar', start_date.year, start_date.month, start_date.day)
+
+        return render(request, 'app/menu.html', {
+        })
 
 class StaffView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
@@ -29,6 +44,22 @@ class StaffView(LoginRequiredMixin, TemplateView):
 
         return render(request, 'app/staff.html', {
             'staffs': staffs,
+        })
+
+
+class ReserveView(LoginRequiredMixin, TemplateView):
+    def get(self, request, *args, **kwargs):
+        Training_data = Training.objects.filter(experience_flg=0)
+
+        # パンくず作成
+        crumbs = []
+        crumbs.extend([
+            {'name': 'トレーニング一覧', 'url': '/reserve/'},
+        ])
+
+        return render(request, 'app/reserve.html', {
+            'training_data': Training_data,
+            'breadcrumbs': crumbs
         })
 
 
@@ -192,6 +223,15 @@ class BookingView(LoginRequiredMixin, TemplateView):
         hour = self.kwargs.get('hour')
         minute = self.kwargs.get('minute')
         form = BookingForm(request.POST or None)
+        training_id = self.kwargs['pk']
+
+        # パンくず作成
+        crumbs = []
+        crumbs.extend([
+            {'name': 'トレーニング一覧', 'url': '/reserve/'},
+            {'name': '予約カレンダー', 'url': f'/calendar/{training_id}/'},
+            {'name': '予約'},
+        ])
 
         return render(request, 'app/booking.html', {
             'training_data': training_data,
@@ -202,6 +242,7 @@ class BookingView(LoginRequiredMixin, TemplateView):
             'hour': hour,
             'minute': minute,
             'form': form,
+            'breadcrumbs': crumbs
         })
 
     def post(self, request, *args, **kwargs):
@@ -303,7 +344,7 @@ class BookingView(LoginRequiredMixin, TemplateView):
             })
 
         # ダブルブッキングチェック
-        ## 予約チェック koko
+        ## 予約チェック
         reserve_cd, target_training_no = reserve_check__function(start_date, minute, hour, booking_data, my_id, duplicates_num)
         if reserve_cd not in (0, 4) and target_training_no is None :
             err_msg = '他の予約と重なった可能性があり、予約できませんでした。'
@@ -372,21 +413,34 @@ class MypageView(LoginRequiredMixin, TemplateView):
         user_end_date = user_data.values('end_date')[0]['end_date']  # 契約終了
         user_date_dif = user_end_date.month - user_start_date.month
 
-        # 過去の予約は出さないようにするため、現時間より前の予約は除外する
-        start_time = timezone.now()
-        booking_data = Booking.objects.filter(user=request.user.id).exclude(Q(end__lt=start_time), del_flg=0)
+        # 過去の予約は過去3か月以内の予約を表示する
+        now_time = timezone.now()
+        three_months_ago = now_time - timedelta(days=90)
 
-        # training_category = <QuerySet [{'training': 1, 'training_cnt': 2}, {'training': 2, 'training_cnt': 1}]>
+        #booking_data = Booking.objects.filter(user=request.user.id).exclude(Q(end__lt=now_time), del_flg=0)
+        booking_data = Booking.objects.filter(
+            user=request.user,           # ログインしてる自分の予約
+            del_flg=0,                   # 論理削除されていない（生きている）データ
+            end__gte=three_months_ago    # 終了時間が3ヶ月前以降（未来の予約も含む♡）
+        ).order_by('-start')
+
         training_category = booking_data.values('training').annotate(training_cnt=Count('training')).order_by('training')
 
         notification = Notification.objects.all()
+
+        # パンくず作成
+        crumbs = []
+        crumbs.extend([
+            {'name': 'マイページ'},
+        ])
 
         return render(request, 'app/mypage.html', {
             'user_data': user_data,
             'booking_data': booking_data,
             'training_category': training_category,
             'notification': notification,
-            'user_date_dif': user_date_dif
+            'user_date_dif': user_date_dif,
+            'breadcrumbs': crumbs,
         })
 
 
@@ -396,11 +450,13 @@ class CancelView(LoginRequiredMixin, TemplateView):
         user_data = CustomUser.objects.get(id=request.user.id)
 
         # 過去の予約は出さないようにするため、現時間より前の予約は除外する
-        start_time = datetime.today()
-        booking_data = Booking.objects.filter(user=request.user.id).exclude(Q(end__lt=start_time), del_flg=0)
+        #start_time = datetime.today()
+        now_time = timezone.now()
+        #tomorrow_time = now_time + timedelta(days=1)
+        #start_time = day_start_end_setting__function(tomorrow_time.year, tomorrow_time.month, tomorrow_time.day)['today_j']
+        booking_data = Booking.objects.filter(user=request.user.id, del_flg=0, end__gte=now_time)  # end が now_time 以上（未来）のものだけ
 
-        training_category = booking_data.values('training').annotate(training_cnt=Count('training')).order_by(
-            'training')
+        training_category = booking_data.values('training').annotate(training_cnt=Count('training')).order_by('training')
 
         return render(request, 'app/cancel.html', {
             'user_data': user_data,
@@ -412,8 +468,11 @@ class CancelView(LoginRequiredMixin, TemplateView):
         post_pks = request.POST.getlist('delete')  # <input type="checkbox" name="delete"のnameに対応
 
         # 予約情報をメール送信内容編集のためDBから取得しておく
-        booking_data = Booking.objects.filter(pk__in=post_pks, del_flg = 0)
+        booking_data = Booking.objects.filter(pk__in=post_pks, del_flg=0)
         booking_text = ''
+        training_name = ''
+        start_time = ''
+        end_time = ''
         for booking in booking_data:
             start = localtime(booking.start)
             start_time = start.strftime('%Y/%m/%d %H:%M')
@@ -422,8 +481,10 @@ class CancelView(LoginRequiredMixin, TemplateView):
             booking_text += f"トレーニング名：{booking.training.name}\n"
             booking_text += f"開始時間：{start_time}\n"
             booking_text += f"終了時間：{end_time}\n\n"  # トレーニング間の改行
+            training_name = booking.training.name
 
-        Booking.objects.filter(pk__in=post_pks).delete()
+        # 論理削除
+        Booking.objects.filter(pk__in=post_pks).update(del_flg=1)
 
         user_data = CustomUser.objects.get(id=request.user.id)
         num_times = user_data.num_times
@@ -438,19 +499,30 @@ class CancelView(LoginRequiredMixin, TemplateView):
         context = {
             'user_name': user_data.first_name + ' ' + user_data.last_name,
             'booking_text': booking_text,
-            'site_url': site_url
+            'site_url': site_url,
+            'training_name': training_name,
+            'start_datetime': start_time,
+            'end_datetime': end_time
         }
         email_templates_id = 2
         send_email__function(user_data.email, context, email_templates_id)
 
         user_data = CustomUser.objects.get(id=request.user.id)
-        booking_data = Booking.objects.filter(user=request.user.id, del_fag=0)
+        booking_data = Booking.objects.filter(user=request.user.id, del_flg=0)
         training_category = booking_data.values('training').annotate(training_cnt=Count('training')).order_by('training')
+
+        # パンくず作成
+        crumbs = []
+        crumbs.extend([
+            {'name': 'マイページ', 'url': '/mypage/'},
+            {'name': '予約取り消し選択'},
+        ])
 
         return render(request, 'app/cancelok.html', {
             'user_data': user_data,
             'booking_data': booking_data,
-            'training_category': training_category
+            'training_category': training_category,
+            'breadcrumbs': crumbs,
         })
 
 

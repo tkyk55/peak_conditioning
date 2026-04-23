@@ -35,11 +35,12 @@ class StaffWork(models.Model):
     remarks = models.TextField('備考', default="", blank=True)
     created_at = models.DateTimeField('作成時間', default=timezone.now)
     updated_at = models.DateTimeField('更新時間', auto_now=True)
+    del_flg = models.IntegerField(default=0)
 
     def __str__(self):
         start = timezone.localtime(self.start).strftime('%Y/%m/%d %H:%M')
         end = timezone.localtime(self.end).strftime('%Y/%m/%d %H:%M')
-        return f'{self.staff_id} {start} ~ {end}'
+        return f'{self.staff_id} {start} ~ {end} {self.del_flg}'
 
 class ClosingDay(models.Model):
     closing_type = models.CharField(('休日タイプ'), max_length=1, default=None)
@@ -49,8 +50,9 @@ class ClosingDay(models.Model):
     training_no = models.IntegerField(default=None, null=True)
     created_at = models.DateTimeField('作成時間', default=timezone.now)
     updated_at = models.DateTimeField('更新時間', auto_now=True)
+    del_flg = models.IntegerField(default=0)
 
     def __str__(self):
         start = timezone.localtime(self.start).strftime('%Y/%m/%d %H:%M')
         end = timezone.localtime(self.end).strftime('%Y/%m/%d %H:%M')
-        return f'{self.id} {self.closing_type} {start} ~ {end} {self.training} {self.training_no}'
+        return f'{self.id} {self.closing_type} {start} ~ {end} {self.training} {self.training_no} {self.del_flg}'

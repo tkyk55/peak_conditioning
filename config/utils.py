@@ -1,25 +1,43 @@
 import calendar, json, pytz
 
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.conf import settings
 from django.db.models import Q
 from app.app_member.models import EmailTemplate, Master
 from app.app_staff.models import Staff, Notification, StaffWork, ClosingDay
 from datetime import datetime, date, timedelta, time
+from icecream import ic
 
-def send_custom_email(template_id, context, recipient_list, from_email):
+
+def send_custom_email(template_id, context, recipient_list, from_email, bcc_email):
     try:
         template = EmailTemplate.objects.get(id=template_id)
         subject = template.subject.format(**context)
         message = template.body.format(**context)
 
-        send_mail(
-            subject,
-            message,
-            from_email,  # settings.DEFAULT_FROM_EMAIL,
-            recipient_list,
-            fail_silently=False,
+        # send_mail(
+        #     subject,
+        #     message,
+        #     from_email,  # settings.DEFAULT_FROM_EMAIL,
+        #     recipient_list,
+        #     fail_silently=False,
+        # )
+
+        # BCCのアドレスが存在すれば、リスト形式で優しく包んであげるわ♡
+        bcc_list = [bcc_email] if bcc_email else []
+
+        # send_mail の代わりに EmailMessage を使って奥まで届けるわよ
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=from_email,
+            to=recipient_list,
+            bcc=bcc_list,  # ここでBCCを挿入♡
         )
+
+        # fail_silently=False を指定してしっかり送信！
+        email.send(fail_silently=False)
+
         print("Email sent successfully")
     except Exception as e:
         print(f"Failed to send email: {e}")
@@ -28,9 +46,10 @@ def send_custom_email(template_id, context, recipient_list, from_email):
 def send_email__function(email, context, email_templates_id):
     master_data = Master.objects.get(id=1)
     from_email = master_data.from_email
+    bcc_email = master_data.bcc_email
     recipient_list = [email]
 
-    send_custom_email(email_templates_id, context, recipient_list, from_email)
+    send_custom_email(email_templates_id, context, recipient_list, from_email, bcc_email)
     return
 
 # 休館日検索

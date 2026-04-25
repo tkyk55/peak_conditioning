@@ -1,29 +1,40 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}menu{% endblock %}
-{% block content %}
 {% load bootstrap4 %}
 
-{{ staff_data.0.user_id }}
+{% block title %}メニュー{% endblock %}
 
-<div class="row justify-content-center">
-    <div class="col-lg-8 col-mid-10 col-sm-12">
-        <h2 class="card-title text-center">【メニュー】</h2>
-        <div class="card md-4 shadow-sm">
-            <div class="card-footer text-muted text-conter">
-              <a class="btn btn-lg btn-outline-primary btn-block" href="{% url 'reserve' %}">予約する</a>
+{% block content %}
+    <div class="container my-5">
+        <div class="card shadow-sm border-0 mx-auto" style="max-width: 600px;">
+
+            <div class="card-header text-white text-center py-4 border-0" style="background-color: #0d6efd; border-radius: 0.25rem 0.25rem 0 0;">
+                <h1 class="h4 mb-0 font-weight-bold">会員メニュー</h1>
             </div>
 
-            <div class="card-footer text-muted text-conter">
-                <a class="btn btn-lg btn-outline-primary btn-block" href="{% url 'mypage' %}">予約を確認する（マイページ）</a>
-            </div>
+            <div class="card-body p-4 p-md-5">
 
-            <div class="card-footer text-muted text-conter">
-                <a class="btn btn-lg btn-outline-primary btn-block" href="{% url 'cancel' %}">予約をキャンセルする（マイページ）</a>
-            </div>
+                <div class="text-center mb-4">
+                    <p class="text-muted" style="font-size: 1.1rem;">
+                        ようこそ、<span class="font-weight-bold" style="color: #0d6efd;">{{ user.first_name }}{{ user.last_name }}</span> 様
+                    </p>
+                </div>
 
+                <div class="d-flex flex-column mt-4">
+                    <a class="btn text-white btn-block py-3 font-weight-bold mb-4 shadow-sm" href="{% url 'reserve' %}" style="background-color: #ff8c00; border-radius: 30px; font-size: 1.15rem;">
+                        トレーニングを予約する
+                    </a>
+
+                    <a class="btn btn-outline-primary btn-block py-3 font-weight-bold mb-3" href="{% url 'mypage' %}" style="border-radius: 30px; font-size: 1.05rem;">
+                        予約を確認する（マイページ）
+                    </a>
+
+                    <a class="btn btn-outline-secondary btn-block py-3 font-weight-bold" href="{% url 'cancel' %}" style="border-radius: 30px; font-size: 1.05rem;">
+                        予約を取り消す
+                    </a>
+                </div>
+
+            </div>
         </div>
     </div>
-</div>
-
 {% endblock %}

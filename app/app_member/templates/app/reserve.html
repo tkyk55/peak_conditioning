@@ -1,47 +1,83 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}menu{% endblock %}
-{% block content %}
 {% load bootstrap4 %}
 
-<div class="row justify-content-center">
-        <div class="md-4">
-            <div class="container">
-                <div class="row">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="/menu">Home</a></li>
-                            {% for crumb in breadcrumbs %}
-                                <li class="breadcrumb-item">
-                                    <a href="{{ crumb.url }}">{{ crumb.name }}</a>
-                                </li>
-                            {% endfor %}
-                        </ol>
-                    </nav>
-                    <div class="mb-3">
-                        <h1>トレーニング一覧</h1>
-                    </div>
-                    {% for training_data in training_data %}
-                    <div class="col-lg-3 col-md-6">
-                        <div class="card img-thumbnail storelist mb-3">
-                            <img
-                                    class="card-img-top card-thum"
-                                    src="{% if training_data.image %} {{ training_data.image.url }} {% endif %}"
-                                    alt=""
-                            />
-                            <div class="card-body text-center px-2 py-3">
-                                <h5 class="font-weight-bold">{{ training_data.name }}</h5>
-                                <p>{{ training_data.description }}</p>
-                            </div>
-                            <a class="stretched-link" href="{% url 'calendar' training_data.pk %}"></a>
+{% block title %}トレーニング一覧{% endblock %}
+
+{% block content %}
+    <style>
+        /* カードにホバーしたときにフワッと浮き上がる魔法よ */
+        .training-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .training-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+        }
+    </style>
+
+    <div class="text-center mb-4 container mt-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent p-0 m-0">
+                <li class="breadcrumb-item"><a href="/menu">Home</a></li>
+                {% for crumb in breadcrumbs %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ crumb.url }}">{{ crumb.name }}</a>
+                    </li>
+                {% endfor %}
+                <li class="breadcrumb-item active" aria-current="page">トレーニング一覧</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="container mb-5">
+
+        <div class="mb-5 text-center">
+            <h1 class="h3 font-weight-bold" style="color: #0d6efd; border-bottom: 3px solid #0d6efd; display: inline-block; padding-bottom: 5px;">
+                トレーニング一覧
+            </h1>
+            <p class="text-muted mt-2 small">ご希望のトレーニングメニューを選択してください</p>
+        </div>
+
+        <div class="row">
+            {% for training in training_data %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card shadow-sm border-0 h-100 training-card">
+
+                        <div style="height: 200px; background-color: #eef5ff; display: flex; align-items: center; justify-content: center;">
+                            {% if training.image %}
+                                <img class="w-100 h-100" src="{{ training.image.url }}" alt="{{ training.name }}" style="object-fit: cover;">
+                            {% else %}
+                                <span style="color: #0d6efd; font-weight: bold;">NO IMAGE</span>
+                            {% endif %}
                         </div>
+
+                        <div class="card-body text-center d-flex flex-column p-4">
+                            <h5 class="card-title font-weight-bold mb-3" style="color: #333;">{{ training.name }}</h5>
+
+                            <p class="card-text text-muted small flex-grow-1 text-left">
+                                {{ training.description|linebreaksbr }}
+                            </p>
+
+                            <div class="mt-4">
+                        <span class="btn btn-outline-primary btn-block" style="border-radius: 20px;">
+                            カレンダーを見る
+                        </span>
+                            </div>
+                        </div>
+
+                        <a class="stretched-link" href="{% url 'calendar' training.pk %}"></a>
                     </div>
-                    {% empty %}
-                    <p>まだトレーニングがありません</p>
-                    {% endfor %}
                 </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <div class="p-5 rounded mx-auto" style="max-width: 600px; background-color: #eef5ff; border: 1px solid #cce0ff;">
+                        <p class="mb-0 font-weight-bold" style="color: #004085;">現在、予約可能なトレーニングがありません。</p>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     </div>
-</div>
-
 {% endblock %}

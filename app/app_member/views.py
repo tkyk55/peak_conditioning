@@ -24,18 +24,14 @@ class IndexView(TemplateView):
 
 class MenuView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
-        user_data = CustomUser.objects.filter(id=request.user.id)
-        user_is_staff = user_data.values('is_staff')[0]['is_staff']  # 予約残数
+        user = request.user
 
-        if user_is_staff:
+        if user.is_staff:
             start_date = date.today()
-            weekday = start_date.weekday()
-            # カレンダー日曜日開始
-            # if weekday != 6:
-            #     start_date = start_date - timedelta(days=weekday + 1)
             return redirect('staff_calendar', start_date.year, start_date.month, start_date.day)
 
         return render(request, 'app/menu.html', {
+            'user': user,
         })
 
 class StaffView(LoginRequiredMixin, TemplateView):
